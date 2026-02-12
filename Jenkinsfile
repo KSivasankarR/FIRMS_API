@@ -6,7 +6,6 @@ pipeline {
     }
 
     environment {
-        // Use a directory Jenkins can write to
         DEPLOY_PATH = "/var/lib/jenkins/FIRMS_API"
         APP_NAME    = "FIRMS_API"
         PORT        = "5000"
@@ -24,41 +23,40 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                // Install dependencies
                 sh 'npm install --legacy-peer-deps'
             }
         }
 
-        stage('Deploy with PM2') {
+        stage('Deploy with PM2 (using rsync)') {
             steps {
-                sh '''
-                    # make sure Jenkins can write
-                    mkdir -p "$DEPLOY_PATH"
-                    cp -r . "$DEPLOY_PATH/"
-                    cd "$DEPLOY_PATH"
+                sh """
+                    # ensure deploy folder exists
+                    mkdir -p "${DEPLOY_PATH}"
 
-                    # Install production packages
+                    # sync files to deploy folder excluding .git
+                    rsync -av --exclude='.git' --exclude='node_modules' ./ "${DEPLOY_PATH}/"
+
+                    cd "${DEPLOY_PATH}"
+
+                    # install production dependencies
                     npm install --production --legacy-peer-deps
 
-                    # Stop any existing PM2 process
-                    pm2 delete "$APP_NAME" || true
+                    # restart PM2 cluster
+                    pm2 delete "${APP_NAME}" || true
+                    PORT=${PORT} pm2 start npm --name "${APP_NAME}" -i max -- start
 
-                    # Start with PM2 cluster mode
-                    PORT=$PORT pm2 start npm --name "$APP_NAME" -i max -- start
-
-                    # Save list so PM2 auto‑reloads on reboot
                     pm2 save
-                '''
+                """
             }
         }
     }
 
     post {
         success {
-            echo '✅ Deployment successful'
+            echo '✅ Backend deployed successfully!'
         }
         failure {
-            echo '❌ Deployment failed'
+            echo '❌ Deployment failed!'
         }
     }
 }
