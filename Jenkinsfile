@@ -34,9 +34,32 @@ pipeline {
             }
         }
 
-        stage('Deploy & Run with PM2 Cluster') {
+        stage('Deploy & Run with PM2') {
             steps {
                 sh """
                     echo "Deploying Backend..."
 
                     rm -rf ${DEPLOY_PATH}
+                    mkdir -p ${DEPLOY_PATH}
+                    cp -r * ${DEPLOY_PATH}/
+                    cd ${DEPLOY_PATH}
+
+                    npm install --production --legacy-peer-deps
+
+                    pm2 delete ${APP_NAME} || true
+                    PORT=${PORT} pm2 start npm --name ${APP_NAME} -i max -- start
+                    pm2 save
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Backend Deployment Successful'
+        }
+        failure {
+            echo '❌ Backend Deployment Failed'
+        }
+    }
+}
