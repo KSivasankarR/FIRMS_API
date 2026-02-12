@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        nodejs "Node16"
+        nodejs "Node16"  // Node16 configured in Jenkins global tools
     }
 
     environment {
@@ -27,24 +27,27 @@ pipeline {
             }
         }
 
-        stage('Deploy with PM2 (using rsync)') {
+        stage('Deploy & Start via PM2') {
             steps {
                 sh """
-                    # ensure deploy folder exists
-                    mkdir -p "${DEPLOY_PATH}"
+                    # Create deploy directory if needed
+                    mkdir -p \$DEPLOY_PATH
 
-                    # sync files to deploy folder excluding .git
-                    rsync -av --exclude='.git' --exclude='node_modules' ./ "${DEPLOY_PATH}/"
+                    # Sync everything except .git and node_modules
+                    rsync -av --exclude='.git' --exclude='node_modules' ./ \$DEPLOY_PATH/
 
-                    cd "${DEPLOY_PATH}"
+                    cd \$DEPLOY_PATH
 
-                    # install production dependencies
+                    # Install only production dependencies
                     npm install --production --legacy-peer-deps
 
-                    # restart PM2 cluster
-                    pm2 delete "${APP_NAME}" || true
-                    PORT=${PORT} pm2 start npm --name "${APP_NAME}" -i max -- start
+                    # Delete old PM2 process if exists
+                    pm2 delete "\$APP_NAME" || true
 
+                    # Start app with PM2 in “single instance” mode
+                    PORT=\$PORT pm2 start npm --name "\$APP_NAME" -i 1 -- start
+
+                    # Save PM2 list for auto-restart
                     pm2 save
                 """
             }
@@ -53,10 +56,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ Backend deployed successfully!'
+            echo '✅ Backend deployed and running with PM2'
         }
         failure {
-            echo '❌ Deployment failed!'
+            echo '❌ Deployment failed'
         }
     }
 }
