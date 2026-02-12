@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        nodejs "Node16"  // Make sure Node16 is configured in Jenkins global tools
+        nodejs "Node16"  // Use Node16 configured in Jenkins tools
     }
 
     environment {
@@ -21,57 +21,46 @@ pipeline {
             }
         }
 
-        stage('Check Node & NPM Version') {
-            steps {
-                sh 'node -v'
-                sh 'npm -v'
-            }
-        }
-
         stage('Install Dependencies') {
             steps {
-                // Install production dependencies
-                sh 'npm install --production'
+                // Install dependencies for the project
+                sh 'npm install --legacy-peer-deps'
             }
         }
 
-        stage('Deploy & Run with PM2') {
+        stage('Deploy & Start PM2') {
             steps {
-                echo "Deploying ${APP_NAME} to ${DEPLOY_PATH} using PM2"
-                sh """
-                    # Create deployment directory if it doesn't exist
-                    mkdir -p ${DEPLOY_PATH}
+                sh '''
+                    # Create deploy directory if not exists
+                    mkdir -p $DEPLOY_PATH
 
-                    # Copy project files
-                    cp -r . ${DEPLOY_PATH}/
+                    # Copy project to deploy directory
+                    cp -r . $DEPLOY_PATH/
 
-                    cd ${DEPLOY_PATH}
+                    cd $DEPLOY_PATH
 
-                    # Install production dependencies in the deployed directory
-                    npm install --production
+                    # Install only production dependencies
+                    npm install --production --legacy-peer-deps
 
-                    # Delete existing PM2 process if exists
-                    pm2 delete '${APP_NAME}' || true
+                    # Stop old PM2 process if exists
+                    pm2 delete "$APP_NAME" || true
 
-                    # Start the app with PM2 in cluster mode
-                    PORT=${PORT} pm2 start npm --name '${APP_NAME}' -i max -- start
+                    # Start application with PM2 in cluster mode
+                    PORT=$PORT pm2 start npm --name "$APP_NAME" -i max -- start
 
-                    # Save PM2 process list
+                    # Save PM2 process list to restart on reboot
                     pm2 save
-
-                    # Setup PM2 to start on system boot
-                    pm2 startup systemd -u $(whoami) --hp $(eval echo ~$(whoami))
-                """
+                '''
             }
         }
     }
 
     post {
         success {
-            echo "✅ Backend deployment successful!"
+            echo '✅ Backend Deployment Successful'
         }
         failure {
-            echo "❌ Backend deployment failed."
+            echo '❌ Backend Deployment Failed'
         }
     }
 }
