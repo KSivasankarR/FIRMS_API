@@ -1,0 +1,177 @@
+import mongoose, { Schema } from 'mongoose';
+import { Firm } from './types';
+import moment from 'moment';
+const now = moment().format();
+
+const { Types: { ObjectId } } = Schema
+const firmSchema: Schema = new Schema({
+    firmName: { type: String, required: true },
+    district: { type: String },
+    userId: { type: ObjectId },
+    applicationNumber: { type: String, required: true },
+    firmDurationFrom: { type: String },
+    firmDurationTo: { type: String },
+    firmNameEffectDate: { type: Date },
+    atWill: { type: Boolean, default: false },
+    industryType: { type: String },
+    bussinessType: { type: String },
+    dissolveDate: { type: Date },
+    newNameEffectDate: { type: Date },
+    applicantDetails: {
+        aadharNumber: { type: String, require: true },
+        name: { type: String },
+        surName: { type: String },
+        relation: { type: String },
+        relationType: { type: String },
+        gender: { type: String },
+        role: { type: String },
+        doorNo: { type: String },
+        street: { type: String },
+        district: { type: String },
+        mandal: { type: String },
+        villageOrCity: { type: String },
+        pinCode: { type: Number },
+        country: { type: String },
+        state: { type: String },
+        age: { type: Number },
+        address: { type: String}
+    },
+    contactDetails: {
+        // landPhoneNumber:{ type: Number },
+        mobileNumber: { type: Number },
+        //faxNumber: { type: String },
+        email: { type: String },
+    },
+    firmPartners: [{
+        remarks: { type: String },
+        ceasingDate: { type: Date },
+        aadharNumber: { type: String, require: true },
+        partnerName: { type: String },
+        partnerSurname: { type: String },
+        relation: { type: String },
+        relationType: { type: String },
+        role: { type: String },
+        age: { type: Number },
+        joiningDate: { type: Date },
+        doorNo: { type: String },
+        street: { type: String },
+        country: { type: String },
+        state: { type: String },
+        district: { type: String },
+        mandal: { type: String },
+        villageOrCity: { type: String },
+        pinCode: { type: Number },
+        status: { type: String, default: 'Active' },
+        // landPhoneNumber:{ type: Number },
+        mobileNumber: { type: Number },
+        faxNumber: { type: String },
+        email: { type: String },
+        gender: { type: String },
+        share: { type: Number },
+        address: { type: String}
+    }],
+    principalPlaceBusiness: [{
+        dateOfChange:{ type: Date },
+        remarks:{ type: String },
+        placeParticulars:{ type: String },
+        doorNo: { type: String },
+        street: { type: String },
+        state: { type: String },
+        district: { type: String },
+        mandal: { type: String },
+        villageOrCity: { type: String },
+        pinCode: { type: Number },
+        effectiveDate: { type: Date },
+        branch: { type: String },
+        country: { type: String },
+        type: { type: String },
+    }],
+    otherPlaceBusiness: [{
+        ceasingDate:{ type: Date },
+        placeName:{ type: String },
+        openingDate:{ type: Date },
+        doorNo: { type: String },
+        street: { type: String },
+        state: { type: String },
+        district: { type: String },
+        mandal: { type: String },
+        villageOrCity: { type: String },
+        pinCode: { type: Number },
+        effectiveDate: { type: Date },
+        branch: { type: String },
+        country: { type: String },
+    }],
+    documentAttached: { type: Array },
+    messageToApplicant: [{
+        number: { type: String },
+        message: { type: String },
+        sentDate: { type: Date, default: now }
+    }],
+    processingHistory: [{
+        designation: { type: String },
+        status: { type: String },
+        remarks: { type: String },
+        attachements: { type: Array },
+        applicationTakenDate: { type: Date, default: now },
+        applicationProcessedDate: { type: Date, default: now },
+    }],
+    UpdatedBy: { type: ObjectId }, //Firm users action 
+    deptUpdatedBy: { type: ObjectId }, //Department users action    
+    status: { type: String, default: 'Incomplete' },
+    firmStatus: { type: String, default: 'Pending' },
+    esignStatus: { type: String, default: 'Pending' },
+    esignTxnId: { type: String, default: '' },
+    historyDetails: [{}],
+    isdownload: { type: Boolean, default: false },
+    isByLawDownload: { type: Boolean, default: false },
+    downloadsHistory: [{}],
+    registrationNumber: { type: Number, default: 0 },
+    registrationYear: { type: Number, default: 0 },
+    isFirmNameChange: { type: Boolean, default: false },
+    isPrincipaladdressChange: { type: Boolean, default: false },
+    isOtherAddressChange: { type: Boolean, default: false },
+    isPartnerPermanentAddressChange: { type: Boolean, default: false },
+    isNewPartnerAdded: { type: Boolean, default: false },
+    isPartnerDeleted: { type: Boolean, default: false },
+    isPartnerReplaced: { type: Boolean, default: false },
+    firmDissolved: { type: Boolean, default: false },
+    paymentStatus: { type: Boolean, default: false },
+    isResubmission: { type: Boolean, default: false },
+    paymentDetails: [{
+        applicationNumber: { type: String },
+        departmentTransID: { type: String },
+        cfmsTransID: { type: Number },
+        transactionStatus: { type: String },
+        amount: { type: Number },
+        totalAmount: { type: Number },
+        paymentMode: { type: String },
+        bankTransID: { type: Number },
+        bankTimeStamp: { type: Date },
+        isUtilized: { type: Boolean },
+        createdAt: { type: Date }
+    }],
+    approvedRejectedById: { type: ObjectId },
+    createdBy: { type: String },
+    updatedBy: { type: String },
+    version: { type: Number },
+    IPAddress: { type: String },
+    isLegacyDataUpdate : {type: Boolean, default: false},
+    isLegacyData: { type: String, default: 'N' },
+    checkList: [{
+        isPartnershipDeedDoc : {type: Boolean, default: false},
+        isAffidvitOrLeaseAgreementDoc : {type: Boolean, default: false},
+        isSelfSignDeclarationDoc : {type: Boolean, default: false},
+        isForm1DigitalSignDoc : {type: Boolean, default: false}
+    }],
+},
+    {
+        timestamps: true
+    });
+
+firmSchema.pre('save', async function (next) {
+    try {
+    } catch (err) { console.error(err); }
+});
+
+const Firm = mongoose.model<Firm>('Firm', firmSchema);
+export default Firm;

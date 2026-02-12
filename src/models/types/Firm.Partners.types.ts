@@ -1,0 +1,30 @@
+import { Document, Schema } from 'mongoose';
+
+export interface FirmPartners {
+    remarks: string,
+    ceasingDate: Date,
+    aadharNumber: string,
+    partnerName: string,
+    partnerSurname: string,
+    relation: string,
+    role: string,
+    relationType: string,
+    age: string,
+    joiningDate: Date,
+    doorNo: string,
+    street: string,
+    district: string,
+    mandal: string,
+    villageOrCity: string,
+    pinCode: number,
+    status: string,
+    state: string,
+    country: string,
+    landPhoneNumber?: number,
+    mobileNumber: number,
+    faxNumber: number,
+    email: string,
+    gender: string,
+    share:number,
+    address: string
+}

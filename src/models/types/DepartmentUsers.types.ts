@@ -1,0 +1,27 @@
+import { Document, Schema } from 'mongoose';
+
+export interface DepartmentUsers {
+    id: string,
+    userName: string,
+    fullName: string,
+    firstName: string,
+    lastName: string,
+    middleName: string,
+    email: string,
+    password: string,
+    mobileNumber: number,
+    role: string,
+    district: string,
+    signature: string,
+    status: string,
+    loginAttemptCount:number,
+    loginAttemptTime:Date,
+    lastLogin:Date,
+    token:string,
+    createdBy?:string,
+    updatedBy?:string,
+    version?:number,
+    IPAddress?:string,
+    isPasswordChanged: boolean,
+    aadharUUID: string,
+}
