@@ -6,7 +6,7 @@ pipeline {
     }
 
     environment {
-        DEPLOY_PATH = "/var/lib/jenkins/FIRMS_BACKEND"
+        DEPLOY_PATH = "/var/lib/jenkins/FIRMS_API"
         APP_NAME = "FIRMS_API"
         PORT = "5000"
     }
