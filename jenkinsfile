@@ -1,0 +1,62 @@
+pipeline {
+    agent any
+
+    tools {
+        nodejs "Node16"
+    }
+
+    environment {
+        DEPLOY_PATH = "/var/lib/jenkins/FIRMS_BACKEND"
+        APP_NAME = "FIRMS_API"
+        PORT = "5000"
+    }
+
+    stages {
+
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/KSivasankarR/FIRMS_API.git',
+                    credentialsId: 'KSivasankarR'
+            }
+        }
+
+        stage('Check Node Version') {
+            steps {
+                sh 'node -v'
+                sh 'npm -v'
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh 'npm install --production'
+            }
+        }
+
+        stage('Deploy & Run with PM2 Cluster') {
+            steps {
+                sh """
+                    mkdir -p ${DEPLOY_PATH}
+                    cp -r . ${DEPLOY_PATH}/
+                    cd ${DEPLOY_PATH}
+
+                    npm install --production
+
+                    pm2 delete ${APP_NAME} || true
+                    PORT=${PORT} pm2 start index.js -i max --name ${APP_NAME}
+                    pm2 save
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Backend Deployment Successful'
+        }
+        failure {
+            echo 'Backend Deployment Failed'
+        }
+    }
+}
