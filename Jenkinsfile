@@ -2,14 +2,13 @@ pipeline {
     agent any
 
     tools {
-        nodejs "Node16"  // Node16 configured in Jenkins
+        nodejs "Node16"  // Make sure Node16 is configured in Jenkins global tools
     }
 
     environment {
-        APP_NAME    = "FIRMS_API"
         DEPLOY_PATH = "/var/lib/jenkins/FIRMS_API"
+        APP_NAME    = "FIRMS_API"
         PORT        = "5000"
-        NODE_ENV    = "production"
     }
 
     stages {
@@ -22,26 +21,45 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Check Node & NPM Version') {
             steps {
-                sh """
-                    mkdir -p ${DEPLOY_PATH}
-                    cp -r * ${DEPLOY_PATH}/
-                    cd ${DEPLOY_PATH}
-                    npm install --production --legacy-peer-deps
-                """
+                sh 'node -v'
+                sh 'npm -v'
             }
         }
 
-        stage('Deploy & Start PM2') {
+        stage('Install Dependencies') {
             steps {
-                sh """
-                    cd ${DEPLOY_PATH}
-                    pm2 delete ${APP_NAME} || true
-                    PORT=${PORT} pm2 start npm --name ${APP_NAME} -i max -- start
+                // Install production dependencies
+                sh 'npm install --production'
+            }
+        }
 
-                    # Set PM2 to auto-start on reboot
+        stage('Deploy & Run with PM2') {
+            steps {
+                echo "Deploying ${APP_NAME} to ${DEPLOY_PATH} using PM2"
+                sh """
+                    # Create deployment directory if it doesn't exist
+                    mkdir -p ${DEPLOY_PATH}
+
+                    # Copy project files
+                    cp -r . ${DEPLOY_PATH}/
+
+                    cd ${DEPLOY_PATH}
+
+                    # Install production dependencies in the deployed directory
+                    npm install --production
+
+                    # Delete existing PM2 process if exists
+                    pm2 delete '${APP_NAME}' || true
+
+                    # Start the app with PM2 in cluster mode
+                    PORT=${PORT} pm2 start npm --name '${APP_NAME}' -i max -- start
+
+                    # Save PM2 process list
                     pm2 save
+
+                    # Setup PM2 to start on system boot
                     pm2 startup systemd -u $(whoami) --hp $(eval echo ~$(whoami))
                 """
             }
@@ -50,10 +68,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ Backend deployed and PM2 configured to start automatically on reboot"
+            echo "✅ Backend deployment successful!"
         }
         failure {
-            echo "❌ Deployment failed"
+            echo "❌ Backend deployment failed."
         }
     }
 }
