@@ -25,7 +25,7 @@ initDb();
 //app.use(express.urlencoded({ extended: true }));
 //app.use(express.static(publicFolder))
  
-const allowedOrigins = ['http://103.129.75.188:3008','http://103.174.56.169:8091','https://firms.rs.ap.gov.in','https://esign.rs.ap.gov.in', 'http://localhost:3008'];
+const allowedOrigins = ['http://10.10.120.190:3008','http://10.10.120.6:8091','https://firms.rs.ap.gov.in','https://esign.rs.ap.gov.in', 'http://localhost:3008'];
 app.use(cors({
     origin: allowedOrigins
 }));
@@ -49,7 +49,7 @@ app.use(function (req, res, next) {
     res.header('Pragma', 'no-cache');
     res.header('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
     res.header('Cache-Control','private, must-revalidate, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0');
-    res.header('Content-Security-Policy', `default-src 'self' 'unsafe-inline' 'unsafe-eval' https://firms.rs.ap.gov.in https://esign.rs.ap.gov.in http://103.129.75.188:3008 http://103.129.75.188:4000 https://registration.ap.gov.in; script-src 'self' 'unsafe-inline'; child-src https://firms.rs.ap.gov.in https://esign.rs.ap.gov.in http://103.129.75.188:3008 http://103.129.75.188:4000 https://registration.ap.gov.in; img-src * 'self' data: https:;`);
+    res.header('Content-Security-Policy', `default-src 'self' 'unsafe-inline' 'unsafe-eval' https://firms.rs.ap.gov.in https://esign.rs.ap.gov.in http://10.10.120.190:3008 http://10/10/120/190:4000 https://registration.ap.gov.in; script-src 'self' 'unsafe-inline'; child-src https://firms.rs.ap.gov.in https://esign.rs.ap.gov.in http://103.129.75.188:3008 http://103.129.75.188:4000 https://registration.ap.gov.in; img-src * 'self' data: https:;`);
     res.removeHeader("X-Powered-By"); 
     next();
 });
