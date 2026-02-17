@@ -2,8 +2,7 @@ pipeline {
     agent any
 
     environment {
-        NODE_HOME = tool name: 'NodeJS', type: 'NodeJSInstallation' // adjust to your NodeJS tool name
-        PATH = "${NODE_HOME}/bin:${env.PATH}"
+        PATH = "${env.PATH}" // NodeJS path will be appended dynamically
     }
 
     stages {
@@ -13,22 +12,29 @@ pipeline {
             }
         }
 
-        stage('Pre-Check Tools') {
+        stage('Setup NodeJS') {
             steps {
                 script {
-                    dir("${env.WORKSPACE}") {
-                        echo "🔍 Checking NodeJS and PM2 installation..."
-                        sh '''
-                        node -v
-                        npm -v
-                        if ! command -v pm2 >/dev/null 2>&1; then
-                            echo "PM2 not found, installing globally..."
-                            npm install -g pm2
-                        else
-                            echo "PM2 is installed"
-                        fi
-                        '''
+                    try {
+                        // Try to use NodeJS installed as a Jenkins tool
+                        def nodeHome = tool name: 'NodeJS', type: 'NodeJSInstallation'
+                        env.PATH = "${nodeHome}/bin:${env.PATH}"
+                        echo "✅ Using Jenkins NodeJS tool at ${nodeHome}"
+                    } catch(Exception e) {
+                        echo "⚠️ Jenkins NodeJS tool not found, using system NodeJS"
+                        sh 'node -v'
+                        sh 'npm -v'
                     }
+
+                    // Ensure PM2 is installed
+                    sh '''
+                    if ! command -v pm2 >/dev/null 2>&1; then
+                        echo "PM2 not found, installing globally..."
+                        npm install -g pm2
+                    else
+                        echo "PM2 is installed"
+                    fi
+                    '''
                 }
             }
         }
@@ -59,16 +65,17 @@ pipeline {
             }
         }
 
-        stage('Start Backend with PM2') {
+        stage('Start Backend with PM2 (Zero-Downtime)') {
             steps {
                 script {
                     dir("${env.WORKSPACE}") {
                         sh '''
-                        pm2 start ecosystem.config.js || pm2 restart ecosystem.config.js
+                        # Reload app if running, start if not
+                        pm2 reload ecosystem.config.js --update-env || pm2 start ecosystem.config.js --update-env
                         pm2 save
                         pm2 status
                         '''
-                        echo "PM2 backend started successfully."
+                        echo "✅ PM2 backend deployed with zero-downtime."
                     }
                 }
             }
@@ -80,7 +87,7 @@ pipeline {
             echo "❌ Pipeline failed! Check PM2 logs and npm logs for details."
         }
         success {
-            echo "✅ Pipeline completed successfully!"
+            echo "✅ Pipeline completed successfully with zero-downtime deployment!"
         }
     }
 }
