@@ -5,8 +5,8 @@
   "main": "index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "ts-node ./server.ts",
-    "dev": "nodemon ./server.ts"
+    "build": "tsc",
+    "start": "ts-node ./server.ts"
   },
   "author": "",
   "license": "ISC",
