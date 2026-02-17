@@ -20,20 +20,14 @@ pipeline {
             }
         }
 
-        stage('Build TypeScript') {
-            steps {
-                sh 'npm run build'
-            }
-        }
-
-        stage('Start / Restart PM2') {
+        stage('Start / Restart App') {
             steps {
                 sh '''
                 # Stop existing PM2 process if running
                 pm2 delete $APP_NAME || true
 
-                # Start the compiled JS server
-                pm2 start dist/server.js --name "$APP_NAME"
+                # Start the app using ts-node
+                pm2 start npm --name "$APP_NAME" -- start
 
                 # Save PM2 process list
                 pm2 save
