@@ -10,6 +10,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                echo 'Checking out code from Git'
                 checkout scm
             }
         }
@@ -17,7 +18,7 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 echo 'Installing npm dependencies'
-                sh 'npm install'
+                sh 'npm ci'
             }
         }
 
@@ -32,7 +33,7 @@ pipeline {
             steps {
                 echo 'Starting / Restarting PM2'
                 sh """
-                pm2 delete $APP_NAME || true
+                pm2 delete $APP_NAME || echo 'No existing PM2 process found'
                 pm2 start dist/server.js --name $APP_NAME -- --port $PORT
                 pm2 save
                 """
