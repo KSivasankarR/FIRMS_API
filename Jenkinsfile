@@ -10,27 +10,31 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                echo 'Checking out code from Git'
                 checkout scm
             }
         }
 
         stage('Install Dependencies') {
             steps {
+                echo 'Installing npm dependencies'
                 sh 'npm install'
             }
         }
 
         stage('Build TypeScript') {
             steps {
+                echo 'Compiling TypeScript to JavaScript'
                 sh 'npm run build'
             }
         }
 
         stage('Start / Restart PM2') {
             steps {
+                echo 'Restarting the application using PM2'
                 sh '''
                 pm2 delete $APP_NAME || true
-                pm2 start ecosystem.config.js
+                pm2 start dist/server.js --name $APP_NAME -- -p $PORT
                 pm2 save
                 '''
             }
@@ -42,7 +46,7 @@ pipeline {
             echo 'Pipeline completed.'
         }
         failure {
-            echo 'Build failed!'
+            echo 'Build failed! Please check the logs.'
         }
     }
 }
