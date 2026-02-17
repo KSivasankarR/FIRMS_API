@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Firms</title>
+	<link
+		href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+		rel="stylesheet">
+
+	<style>
+		.main-content {
+			font-family: "Poppins", sans-serif;
+			margin: 50px auto 0;
+		}
+
+		.stampImg {
+			margin: 0 auto !important;
+			display: table;
+			text-align: center;
+			justify-content: center;
+		}
+
+		.stampImg img {
+			width: 120px;
+		}
+
+			
+	   .contentInfo {
+					margin: 0 auto;
+					text-align: center;
+			
+		}
+
+		.contentInfo .regText {
+			font-size: 22px;
+			font-weight: 600;
+			font-family: "Poppins", sans-serif;
+			margin: 10px 0 0;
+			line-height: 25px;
+		}
+
+		.contentInfo h5 {
+			font-size: 18px;
+			font-weight: 600;
+			font-family: "Poppins", sans-serif;
+			margin: 10px 0 0;
+		}
+
+		.contentInfo h4 {
+			font-weight: 600;
+			font-family: "Poppins", sans-serif;
+		}
+
+		.contentInfo span {
+			font-size: 18px;
+			font-weight: 600;
+			color: red;
+			padding-top: 10px;
+		}
+
+		.contentInfo h4 {
+			margin: 30px 0 35px;
+		}
+
+		.applicationCon {
+			margin-bottom: 25px;
+		}
+
+		.signContainer {
+			margin: 20px 0 20px;
+		}
+
+		.signContainer p {
+			font-size: 15px;
+		}
+
+		.applicationInfo,
+		.signInfo {
+			text-align: right;
+		}
+
+		.cerText {
+			padding-bottom: 80px;
+		}
+
+		.sealImg {
+			position: relative;
+			text-align: left;
+			justify-content: left;
+		}
+
+		{{!-- .sealImg img {
+			width: 100px;
+		} --}}
+
+		.sealImg h6 {
+			font-size: 15px;
+			margin: 15px 0;
+			text-align: center;
+		}
+
+		.appText {
+			font-family: "Poppins", sans-serif;
+			position: absolute;
+			color: red;
+			{{!-- transform: rotate(-60deg); --}}
+			top: 60px;
+            left: 40px;
+			background: white;
+			padding: 0px 5px 3px;
+			line-height: 10px;
+		}
+
+		.tableInfo h3 {
+			font-size: 22px;
+		}
+
+		.tableInfo h4 {
+			font-size: 20px;
+		}
+
+		.certifiyTable thead tr th {
+			font-family: "Poppins", sans-serif;
+			color: #403f3f;
+		}
+
+		.certifiyTable tbody tr td {
+			font-family: "Poppins", sans-serif;
+			color: #403f3f;
+		}
+
+		.conText {
+			font-size: 14px !important;
+		}
+
+		.contentCon {
+			text-align: left;
+		}
+
+		.contentCon p {
+			line-height: 20px;
+			font-size: 15px;
+		}
+
+		.contentCon span {
+			font-size: 15px;
+		}
+
+		@font-face {
+			font-family: "Poppins", sans-serif;
+			font-style: normal;
+			src: url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap') format('woff2');
+			unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+		}
+
+		@media print {
+			@page {
+				size: A4;
+				margin: 60px 40px;
+			}
+
+			body {
+				margin: 0;
+			}
+
+			.custom-margin {
+				margin-top: 10px;
+			}
+		}
+	</style>
+</head>
+
+<body>
+	<div class="main-content">
+		<div class="container">
+			<div class="row">
+				<div class="col-lg-12">
+					<div class="contentInfo custom-margin">
+						<div class="row p-0">
+							<div class="col-lg-12 justify-content-center p-0">
+								<div class="stampImg">
+									<img src="data:image/png;base64, {{assets.apLogoBase64}}" width="130px" />
+								</div>
+							</div>
+						</div>
+						<h4 class="regText">REGISTRATION & STAMPS DEPARTMENT</h4>
+						<span>GOVERNMENT OF ANDHRA PRADESH</span>
+						<h4 class="text-center">ACKNOWLEDGEMENT ON REJECTION ORDER</h4>
+
+						<div class="row justify-content-end applicationCon">
+							<div class="col-lg-4">
+								<div class="applicationInfo">
+									<h6>Application No</h6>
+									  <img alt="" src="data:image/png;base64, {{assets.barcodebase64}}" width="150" height="30"/>
+                                  
+									<p>Date:{{todaysDate}}</p>
+								</div>
+							</div>
+						</div>
+						<div class="maincontainerInfo contentCon">
+							<p class="conText">The application with Unique applicant No:
+								<b>{{applicationNumber}}</b>,
+								applied for
+								Registration (Firms (Under section :58)) has been <span>REJECTED</span> by
+								{{deptUserDetails.role}} OF FIRMS of {{deptUserDetails.district}} District.
+								Due To : The Comments from the REGISTRAR OF FIRMS for rejecting the
+								application: {{remarks}}.
+							</p>
+							<br />
+							
+						</div>
+
+
+
+						<div class="row justify-content-between signContainer">
+							<div class="col-lg-6">
+								<div class="sealImg">
+									<img src="data:image/png;base64, {{assets.sealFirmBase64}}" width="150px"/>
+									<h5>{{district}}</h5>
+									<div class="appText">
+										{{!-- <h5>Rejected</h5> --}}
+									</div>
+								</div>
+							</div>
+							<div class="col-lg-6">
+								<div class="justify-content-end signInfo">
+
+									<div class="sigInforightCon">
+										<p>Date: {{todaysDate}}</p>
+										<p class="cerText">Certified by</p>
+										{{!-- <img src="./images/bar.avif" class="barImg"> --}}
+										<div></div>
+										<p>Name: {{deptUserDetails.fullName}}</p>
+
+										<p>Designation: {{deptUserDetails.role}} </p>
+
+										<p>District: {{deptUserDetails.district}}
+										</p>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div>NOTE: THIS IS AN ELECTRONICALLY SIGNED DOCUMENT. NO PHYSICAL SIGNATURE IS REQUIRED</div>
+					</div>
+				</div>
+			</div>
+		</div>
+</body>
+
+</html>
