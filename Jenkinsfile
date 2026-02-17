@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -6,125 +7,76 @@ pipeline {
     }
 
     environment {
-        APP_NAME = 'FIRMS_API'
-        DEPLOY_PATH = '/var/lib/jenkins/FIRMS_API'
-        BACKUP_PATH = '/var/lib/jenkins/FIRMS_API_backup'
-        BACKUP_KEEP = 5
-        PORT = '4000'
+        PORT = '3004'
         HOST = '10.10.120.190'
+        APP_NAME = 'FIRMS_API'
+        APP_DIR = '/var/lib/jenkins/FIRMS_AP'
         PM2_HOME = '/var/lib/jenkins/.pm2'
-        NODE_ENV = 'production'
-        HUSKY_SKIP_INSTALL = "1"
-        REPO_URL = 'https://github.com/KSivasankarR/FIRMS_API'
     }
 
     stages {
-        stage('Checkout') {
+
+        stage('Checkout SCM') {
             steps {
-                git branch: 'main', url: "${REPO_URL}"
+                checkout scm
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Install Dependencies (if needed)') {
             steps {
-                sh '''
-                    export HUSKY_SKIP_INSTALL=1
-                    node -v
-                    npm -v
-                    npm install --legacy-peer-deps --verbose
-                '''
+                script {
+                    // Check if node_modules exists
+                    if (!fileExists("${APP_DIR}/node_modules")) {
+                        echo "📦 node_modules not found. Installing dependencies..."
+                        sh """
+                            cd ${APP_DIR}
+                            npm install
+                        """
+                    } else {
+                        echo "✅ node_modules already exists. Skipping npm install."
+                    }
+                }
             }
         }
 
-        stage('Build') {
+        stage('Prepare Directories') {
             steps {
-                sh '''
-                    npm run build --verbose || echo "No build step defined, skipping"
-                '''
+                sh """
+                    mkdir -p ${APP_DIR}/Govtproject/fileupload
+                    mkdir -p ${APP_DIR}/Govtproject/Generatedlicenses
+                    chown -R jenkins:jenkins ${APP_DIR}/Govtproject
+                """
             }
         }
 
-        stage('Backup Previous Deploy') {
+        stage('Start Backend with PM2') {
             steps {
-                sh '''
-                    mkdir -p ${BACKUP_PATH}
-                    if [ -d "${DEPLOY_PATH}" ]; then
-                        mv ${DEPLOY_PATH} ${BACKUP_PATH}/${APP_NAME}_backup_$(date +%F_%H-%M-%S)
-                    fi
-                    # Keep only last ${BACKUP_KEEP} backups
-                    ls -1tr ${BACKUP_PATH} | grep ${APP_NAME}_backup_ | head -n -${BACKUP_KEEP} | xargs -r rm -rf
-                '''
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                sh '''
-                    mkdir -p ${DEPLOY_PATH}
-                    rm -rf ${DEPLOY_PATH}/*
-                    rsync -av --exclude='.git' --exclude='node_modules' ./ ${DEPLOY_PATH}/
-
+                sh """
                     export PM2_HOME=${PM2_HOME}
-                    cd ${DEPLOY_PATH}
 
-                    # Start or reload API in PM2 cluster mode with auto-restart
-                    if pm2 describe ${APP_NAME} > /dev/null; then
-                        pm2 reload ${APP_NAME} --update-env
-                    else
-                        pm2 start npm --name "${APP_NAME}" -- run start -- -p ${PORT} -H ${HOST} -i max
-                    fi
+                    # Stop old process if exists
+                    pm2 delete ${APP_NAME} || true
 
+                    # Start backend with npm start
+                    pm2 start "npm start" \
+                        --name ${APP_NAME} \
+                        --cwd ${APP_DIR}
+
+                    # Save PM2 process list
                     pm2 save
                     pm2 status
-                '''
-            }
-        }
-
-        stage('Verify Deployment') {
-            steps {
-                sh '''
-                    RETRIES=8
-                    COUNT=0
-                    until curl -s --head http://${HOST}:${PORT}/health | grep "200 OK"; do
-                        COUNT=$((COUNT+1))
-                        echo "Waiting for API to start... Attempt $COUNT"
-                        sleep 5
-                        if [ $COUNT -ge $RETRIES ]; then
-                            echo "API failed to respond after $RETRIES attempts"
-                            exit 1
-                        fi
-                    done
-                    echo "API is running on port ${PORT}"
-                '''
+                """
             }
         }
     }
 
     post {
         success {
-            echo "✅ Deployment completed successfully!"
+            echo "Backend started successfully via PM2"
         }
         failure {
-            echo "❌ Deployment failed! Attempting rollback..."
-            sh '''
-                LAST_BACKUP=$(ls -1tr ${BACKUP_PATH} | grep ${APP_NAME}_backup_ | tail -n 1)
-                if [ -n "$LAST_BACKUP" ]; then
-                    echo "Restoring backup $LAST_BACKUP..."
-                    rm -rf ${DEPLOY_PATH}
-                    mv ${BACKUP_PATH}/$LAST_BACKUP ${DEPLOY_PATH}
-                    export PM2_HOME=${PM2_HOME}
-
-                    if pm2 describe ${APP_NAME} > /dev/null; then
-                        pm2 reload ${APP_NAME} --update-env
-                    else
-                        pm2 start npm --name "${APP_NAME}" -- run start -- -p ${PORT} -H ${HOST} -i max
-                    fi
-
-                    pm2 save
-                else
-                    echo "No backup found to restore!"
-                fi
-            '''
+            echo "Pipeline failed! Check PM2 logs for details."
         }
     }
 }
+
