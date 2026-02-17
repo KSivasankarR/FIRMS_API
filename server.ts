@@ -1,74 +1,79 @@
 import * as dotenv from 'dotenv';
 dotenv.config();
-import express from 'express';
-const app = express();
-const path = require("path");
-import { resolve } from 'path'
-import cors from 'cors'
-import { init as initDb } from './src/config/db'
-const PORT = process.env.PORT || 8000;
+
+import express, { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
+import cors from 'cors';
+import { resolve } from 'path';
+import { init as initDb } from './src/config/db';
 import router from './src/api/index';
-import bodyParser from 'body-parser';
-import swaggerJSDoc from 'swagger-jsdoc';
-import swaggerUi from "swagger-ui-express";
+import swaggerUi from 'swagger-ui-express';
 import swaggerJson from './swagger.json';
-import type { ErrorRequestHandler } from "express";
- 
-//const publicFolder = resolve(__dirname, './public')
-//process.env.DIR_ROOT = __dirname;
-//app.use("/files", express.static(path.join(process.env.DIR_ROOT, "pdfs/uploads")));
-//app.use("/files", express.static(path.join(__dirname, "./pdfs/uploads")));
- 
-initDb();
-//app.use(express.json());
-//app.use(bodyParser.json());
-//app.use(express.urlencoded({ extended: true }));
-//app.use(express.static(publicFolder))
- 
-const allowedOrigins = ['http://10.10.120.190:3008','http://10.10.120.6:8091','https://firms.rs.ap.gov.in','https://esign.rs.ap.gov.in', 'http://localhost:3008'];
+
+const app = express();
+const PORT = process.env.PORT || 4000;
+
+// ------------------- CORS & Security -------------------
+const allowedOrigins = [
+    'http://10.10.120.190:3008',
+    'http://10.10.120.6:8091',
+    'https://firms.rs.ap.gov.in',
+    'https://esign.rs.ap.gov.in',
+    'http://localhost:3008'
+];
+
 app.use(cors({
-    origin: allowedOrigins
+    origin: allowedOrigins,
+    credentials: true,
 }));
 
-app.disable('x-powered-by');
-app.disable('etag');
-app.use(function (req, res, next) {
+app.use((req: Request, res: Response, next: NextFunction) => {
     const origin = req.headers.origin;
     if (origin && allowedOrigins.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
     }
-    // res.header('Access-Control-Allow-Origin', '*');
+
     res.header('X-Frame-Options','SAMEORIGIN');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
-    res.header('Access-Control-Expose-Headers', 'Content-Length');
-    res.header('Access-Control-Allow-Headers', 'Accept, Authorization, Content-Type, X-Requested-With, Range');
     res.header('X-XSS-Protection', '1; mode=block');
     res.header('X-Content-Type-Options', 'nosniff');
+    res.header('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+    res.header('Cache-Control','private, must-revalidate, max-age=0, no-store, no-cache');
     res.header('Expires', '0');
     res.header('Pragma', 'no-cache');
-    res.header('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
-    res.header('Cache-Control','private, must-revalidate, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0');
-    res.header('Content-Security-Policy', `default-src 'self' 'unsafe-inline' 'unsafe-eval' https://firms.rs.ap.gov.in https://esign.rs.ap.gov.in http://10.10.120.190:3008 http://10.10.120.190:3004 https://registration.ap.gov.in; script-src 'self' 'unsafe-inline'; child-src https://firms.rs.ap.gov.in https://esign.rs.ap.gov.in http://103.129.75.188:3008 http://10.10.120.190:4000 https://registration.ap.gov.in; img-src * 'self' data: https:;`);
-    res.removeHeader("X-Powered-By"); 
+    res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
+    res.header('Access-Control-Allow-Headers', 'Accept, Authorization, Content-Type, X-Requested-With, Range');
+    res.header('Access-Control-Expose-Headers', 'Content-Length');
     next();
 });
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerJson));
-const publicFolder = resolve(__dirname, './public')
+// ------------------- Middleware -------------------
 app.use(express.json());
-//app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(publicFolder))
-app.use("/api/files", express.static(path.join(process.env.FILE_DIR_PATH, "pdfs/uploads")));
-app.get("/", (req, res): void => {
-    res.send("Hello Typescript with Node.js!")
-});  
-app.use('/api/', router);
 
-const errorHandler: ErrorRequestHandler = (err, req, res, next) => { };
-app.use(errorHandler);
-app.listen(PORT, (): void => {
-    console.log(`Server Running here 👉 http://localhost:${PORT}`);
+const publicFolder = resolve(__dirname, './public');
+app.use(express.static(publicFolder));
+app.use("/api/files", express.static(resolve(process.env.FILE_DIR_PATH || '.', "pdfs/uploads")));
+
+// ------------------- Swagger -------------------
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerJson));
+
+// ------------------- Routes -------------------
+app.get("/", (_req: Request, res: Response) => {
+    res.send("Hello TypeScript with Node.js!");
 });
- 
+
+app.use("/api", router);
+
+// ------------------- Database Init -------------------
+initDb();
+
+// ------------------- Error Handler -------------------
+const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error' });
+};
+app.use(errorHandler);
+
+// ------------------- Start Server -------------------
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+});
