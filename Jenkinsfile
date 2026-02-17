@@ -4,7 +4,7 @@ pipeline {
     environment {
         NODE_ENV = 'production'
         APP_NAME = 'FIRMS_API'
-        PORT = '4000'
+        PORT = '3004'
     }
 
     stages {
