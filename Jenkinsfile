@@ -7,10 +7,11 @@ pipeline {
         APP_NAME = 'FIRMS_API'
         APP_DIR = '/var/lib/jenkins/FIRMS_API'
         PM2_HOME = '/var/lib/jenkins/.pm2'
-        PATH = "${env.PATH}" // NodeJS path will be appended dynamically
+        PATH = "${env.PATH}"
     }
 
     stages {
+
         stage('Checkout SCM') {
             steps {
                 script {
@@ -74,19 +75,50 @@ pipeline {
             }
         }
 
-        stage('Start Backend with PM2 (Zero-Downtime)') {
+        stage('Start Backend with PM2 (Cluster, Fixed ID)') {
             steps {
                 dir("${APP_DIR}") {
-                    sh """
-                    export PM2_HOME=${PM2_HOME}
-                    pm2 reload ecosystem.config.js --update-env || pm2 start ecosystem.config.js --update-env
-                    pm2 save
-                    pm2 status
-                    """
-                    echo "✅ PM2 backend deployed with zero-downtime."
+                    script {
+                        // Auto-create ecosystem.config.js if missing
+                        if (!fileExists('ecosystem.config.js')) {
+                            echo "⚠️ ecosystem.config.js not found. Creating default..."
+                            writeFile file: 'ecosystem.config.js', text: """
+module.exports = {
+  apps: [
+    {
+      name: '${APP_NAME}',       // fixed PM2 process name
+      script: 'server.js',       // <-- replace with your entry point
+      instances: 1,              // single cluster instance
+      exec_mode: 'cluster',      // enables cluster mode
+      watch: false,
+      env: {
+        NODE_ENV: 'production',
+        PORT: ${PORT},
+        HOST: '${HOST}'
+      },
+      log_file: './logs/combined.log',
+      error_file: './logs/error.log',
+      out_file: './logs/out.log',
+      merge_logs: true,
+      autorestart: true
+    }
+  ]
+};
+"""
+                        }
+
+                        sh """
+                        export PM2_HOME=${PM2_HOME}
+                        pm2 reload ecosystem.config.js --update-env || pm2 start ecosystem.config.js --update-env
+                        pm2 save
+                        pm2 status
+                        """
+                        echo "✅ PM2 backend deployed in cluster mode with fixed ID and zero-downtime."
+                    }
                 }
             }
         }
+
     }
 
     post {
@@ -94,7 +126,7 @@ pipeline {
             echo "❌ Pipeline failed! Check PM2 logs and npm logs for details."
         }
         success {
-            echo "✅ Pipeline completed successfully with zero-downtime deployment!"
+            echo "✅ Pipeline completed successfully with cluster PM2 deployment!"
         }
     }
 }
