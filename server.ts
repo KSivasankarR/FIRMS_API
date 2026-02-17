@@ -10,7 +10,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJson from './swagger.json';
 
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 3004;
 
 // ------------------- CORS & Security -------------------
 const allowedOrigins = [
