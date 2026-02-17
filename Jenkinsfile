@@ -5,14 +5,11 @@ pipeline {
         NODE_ENV = 'production'
         APP_NAME = 'FIRMS_API'
         PORT = '3004'
-        APP_DIR = "${WORKSPACE}"
-        PM2_HOME = '/var/lib/jenkins/.pm2'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                echo 'Checking out code from Git'
                 checkout scm
             }
         }
@@ -33,12 +30,12 @@ pipeline {
 
         stage('Start / Restart PM2') {
             steps {
-                echo 'Restarting the application using PM2'
-                sh '''
+                echo 'Starting / Restarting PM2'
+                sh """
                 pm2 delete $APP_NAME || true
-                pm2 start dist/server.js --name $APP_NAME -- -p $PORT
+                pm2 start dist/server.js --name $APP_NAME -- --port $PORT
                 pm2 save
-                '''
+                """
             }
         }
     }
@@ -48,7 +45,7 @@ pipeline {
             echo 'Pipeline completed.'
         }
         failure {
-            echo 'Build failed! Please check the logs.'
+            echo 'Build failed! Check the logs.'
         }
     }
 }
