@@ -1,39 +1,48 @@
-
 pipeline {
     agent any
 
-    tools {
-        nodejs 'Node16'  // Make sure Node16 is installed on Jenkins
-    }
-
     environment {
-        PORT = '3004'
-        HOST = '10.10.120.190'
-        APP_NAME = 'FIRMS_API'
-        APP_DIR = '/var/lib/jenkins/FIRMS_AP'
-        PM2_HOME = '/var/lib/jenkins/.pm2'
+        NODE_HOME = tool name: 'NodeJS', type: 'NodeJSInstallation' // adjust to your NodeJS tool name
+        PATH = "${NODE_HOME}/bin:${env.PATH}"
     }
 
     stages {
-
         stage('Checkout SCM') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Install Dependencies (if needed)') {
+        stage('Pre-Check Tools') {
             steps {
                 script {
-                    // Check if node_modules exists
-                    if (!fileExists("${APP_DIR}/node_modules")) {
-                        echo "📦 node_modules not found. Installing dependencies..."
-                        sh """
-                            cd ${APP_DIR}
-                            npm install
-                        """
-                    } else {
-                        echo "✅ node_modules already exists. Skipping npm install."
+                    dir("${env.WORKSPACE}") {
+                        echo "🔍 Checking NodeJS and PM2 installation..."
+                        sh '''
+                        node -v
+                        npm -v
+                        if ! command -v pm2 >/dev/null 2>&1; then
+                            echo "PM2 not found, installing globally..."
+                            npm install -g pm2
+                        else
+                            echo "PM2 is installed"
+                        fi
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    dir("${env.WORKSPACE}") {
+                        if (!fileExists('node_modules')) {
+                            echo "📦 node_modules not found. Installing dependencies..."
+                            sh 'npm install'
+                        } else {
+                            echo "✅ node_modules already exists. Skipping install."
+                        }
                     }
                 }
             }
@@ -41,42 +50,37 @@ pipeline {
 
         stage('Prepare Directories') {
             steps {
-                sh """
-                    mkdir -p ${APP_DIR}/Govtproject/fileupload
-                    mkdir -p ${APP_DIR}/Govtproject/Generatedlicenses
-                    chown -R jenkins:jenkins ${APP_DIR}/Govtproject
-                """
+                script {
+                    dir("${env.WORKSPACE}") {
+                        sh 'mkdir -p logs'
+                        echo "Directories prepared."
+                    }
+                }
             }
         }
 
         stage('Start Backend with PM2') {
             steps {
-                sh """
-                    export PM2_HOME=${PM2_HOME}
-
-                    # Stop old process if exists
-                    pm2 delete ${APP_NAME} || true
-
-                    # Start backend with npm start
-                    pm2 start "npm start" \
-                        --name ${APP_NAME} \
-                        --cwd ${APP_DIR}
-
-                    # Save PM2 process list
-                    pm2 save
-                    pm2 status
-                """
+                script {
+                    dir("${env.WORKSPACE}") {
+                        sh '''
+                        pm2 start ecosystem.config.js || pm2 restart ecosystem.config.js
+                        pm2 save
+                        pm2 status
+                        '''
+                        echo "PM2 backend started successfully."
+                    }
+                }
             }
         }
     }
 
     post {
-        success {
-            echo "Backend started successfully via PM2"
-        }
         failure {
-            echo "Pipeline failed! Check PM2 logs for details."
+            echo "❌ Pipeline failed! Check PM2 logs and npm logs for details."
+        }
+        success {
+            echo "✅ Pipeline completed successfully!"
         }
     }
 }
-
