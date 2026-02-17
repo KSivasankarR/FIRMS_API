@@ -2,6 +2,11 @@ pipeline {
     agent any
 
     environment {
+        PORT = '3004'
+        HOST = '10.10.120.190'
+        APP_NAME = 'FIRMS_API'
+        APP_DIR = '/var/lib/jenkins/.FIRMS_API'
+        PM2_HOME = '/var/lib/jenkins/.pm2'
         PATH = "${env.PATH}" // NodeJS path will be appended dynamically
     }
 
@@ -12,11 +17,10 @@ pipeline {
             }
         }
 
-        stage('Setup NodeJS') {
+        stage('Setup NodeJS & PM2') {
             steps {
                 script {
                     try {
-                        // Try to use NodeJS installed as a Jenkins tool
                         def nodeHome = tool name: 'NodeJS', type: 'NodeJSInstallation'
                         env.PATH = "${nodeHome}/bin:${env.PATH}"
                         echo "✅ Using Jenkins NodeJS tool at ${nodeHome}"
@@ -42,7 +46,7 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 script {
-                    dir("${env.WORKSPACE}") {
+                    dir("${APP_DIR}") {
                         if (!fileExists('node_modules')) {
                             echo "📦 node_modules not found. Installing dependencies..."
                             sh 'npm install'
@@ -57,7 +61,7 @@ pipeline {
         stage('Prepare Directories') {
             steps {
                 script {
-                    dir("${env.WORKSPACE}") {
+                    dir("${APP_DIR}") {
                         sh 'mkdir -p logs'
                         echo "Directories prepared."
                     }
@@ -68,13 +72,14 @@ pipeline {
         stage('Start Backend with PM2 (Zero-Downtime)') {
             steps {
                 script {
-                    dir("${env.WORKSPACE}") {
-                        sh '''
+                    dir("${APP_DIR}") {
+                        sh """
+                        export PM2_HOME=${PM2_HOME}
                         # Reload app if running, start if not
                         pm2 reload ecosystem.config.js --update-env || pm2 start ecosystem.config.js --update-env
                         pm2 save
                         pm2 status
-                        '''
+                        """
                         echo "✅ PM2 backend deployed with zero-downtime."
                     }
                 }
