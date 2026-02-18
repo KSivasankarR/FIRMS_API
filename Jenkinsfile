@@ -1,56 +1,62 @@
 pipeline {
     agent any
 
-    tools {
-        // Make sure Node18 is configured in Jenkins Global Tool Config
-        nodejs 'Node18'
-    }
-
     environment {
+        // Optional: PM2 home
         PM2_HOME = "${HOME}/.pm2"
     }
 
     stages {
         stage('Checkout SCM') {
             steps {
-                checkout scm
+                git(
+                    url: 'https://github.com/KSivasankarR/FIRMS_API.git',
+                    branch: 'main',
+                    credentialsId: 'KSivasankarR'
+                )
+            }
+        }
+
+        stage('Use Node 18 with nvm') {
+            steps {
+                // Load Node 18 using nvm
+                sh '''
+                export NVM_DIR="$HOME/.nvm"
+                [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+                nvm install 18
+                nvm use 18
+                node -v
+                npm -v
+                '''
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                script {
-                    if (!fileExists('node_modules')) {
-                        echo "📦 Installing dependencies..."
-                        sh 'npm install'
-                    } else {
-                        echo "✅ node_modules already exists, skipping npm install"
-                    }
-                }
+                sh '''
+                npm install
+                '''
             }
         }
 
         stage('Start Backend with PM2') {
             steps {
-                script {
-                    // Stop previous process if it exists
-                    sh '''
-                    pm2 delete FIRMS_API || true
-                    pm2 start npm --name FIRMS_API -- start --cwd $WORKSPACE
-                    pm2 save
-                    pm2 status
-                    '''
-                }
+                sh '''
+                pm2 delete FIRMS_API || true
+                pm2 start npm --name FIRMS_API -- start
+                pm2 save
+                pm2 status
+                '''
             }
         }
     }
 
     post {
         success {
-            echo 'Backend started successfully via PM2'
+            echo "Backend started successfully via PM2"
         }
         failure {
-            echo 'Pipeline failed. Check logs above for details.'
+            echo "Pipeline failed!"
         }
     }
 }
