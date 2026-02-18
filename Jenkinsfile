@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     environment {
+        PORT = 3004
         APP_NAME = "FIRMS_API"
         NVM_DIR = "${HOME}/.nvm"
     }
