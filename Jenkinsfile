@@ -1,61 +1,57 @@
 pipeline {
     agent any
+
     tools {
-        nodejs 'Node16'  // Make sure Node16 is installed on Jenkins
-    } 
-    environment {
-        PORT = '3004'
-        HOST = '0.0.0.0'
-        APP_NAME = 'FIRMS_API'
-        APP_DIR = '/var/lib/jenkins/FIRMS_API'
-        PM2_HOME = '/var/lib/jenkins/.pm2'
+        nodejs 'Node18' // Node 18+ installed in Jenkins tools
     }
+
+    environment {
+        PM2_HOME = "${env.HOME}/.pm2"
+    }
+
     stages {
+
         stage('Checkout SCM') {
             steps {
                 checkout scm
             }
         }
-        stage('Install Dependencies (if needed)') {
+
+        stage('Install Dependencies') {
             steps {
                 script {
-                    // Check if node_modules exists
-                    if (!fileExists("${APP_DIR}/node_modules")) {
-                        echo "📦 node_modules not found. Installing dependencies..."
-                        sh """
-                            cd ${APP_DIR}
-                            npm install
-                        """
-                    } else {
-                        echo "✅ node_modules already exists. Skipping npm install."
-                    }
+                    echo "📦 Installing dependencies with Node ${tool 'Node18'}..."
+                    sh '''
+                        node -v
+                        npm -v
+                        rm -rf node_modules package-lock.json
+                        npm install
+                    '''
                 }
             }
         }
+
         stage('Start Backend with PM2') {
             steps {
-                sh """
-                    export PM2_HOME=${PM2_HOME} 
-                    # Stop old process if exists
-                    pm2 delete ${APP_NAME} || true
-                    # Start backend with npm start
-                    pm2 start "npm start" \
-                        --name ${APP_NAME} \
-                        --cwd ${APP_DIR}
-                    # Save PM2 process list
-                    pm2 save
-                    pm2 status
-                """
+                script {
+                    echo "🚀 Starting FIRMS_API via PM2..."
+                    sh '''
+                        pm2 delete FIRMS_API || true
+                        pm2 start npm --name FIRMS_API -- start
+                        pm2 save
+                        pm2 status
+                    '''
+                }
             }
         }
     }
+
     post {
         success {
-            echo "Backend started successfully via PM2"
+            echo "✅ Backend started successfully via PM2"
         }
         failure {
-            echo "Pipeline failed! Check PM2 logs for details."
+            echo "❌ Build or start failed"
         }
     }
 }
- 
