@@ -1,65 +1,70 @@
 pipeline {
     agent any
-
+    tools {
+        nodejs 'Node16'  // Make sure Node16 is installed on Jenkins
+    } 
     environment {
-        PM2_HOME = "${HOME}/.pm2"
+        PORT = '3004'
+        HOST = '0.0.0.0'
+        APP_NAME = 'FIRMS_API'
+        APP_DIR = '/var/lib/jenkins/FIRMS_API'
+        PM2_HOME = '/var/lib/jenkins/.pm2'
     }
-
     stages {
         stage('Checkout SCM') {
             steps {
-                git(
-                    url: 'https://github.com/KSivasankarR/FIRMS_API.git',
-                    branch: 'main',
-                    credentialsId: 'KSivasankarR'
-                )
+                checkout scm
             }
         }
-
-        stage('Use Node 18 with nvm') {
-            steps {
-                sh '''
-                export NVM_DIR="$HOME/.nvm"
-                [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-                nvm install 18
-                nvm use 18
-                node -v
-                npm -v
-                '''
-            }
-        }
-
-        stage('Install Dependencies') {
+        stage('Install Dependencies (if needed)') {
             steps {
                 script {
-                    if (!fileExists('node_modules')) {
+                    // Check if node_modules exists
+                    if (!fileExists("${APP_DIR}/node_modules")) {
                         echo "📦 node_modules not found. Installing dependencies..."
-                        sh 'npm install'
+                        sh """
+                            cd ${APP_DIR}
+                            npm install
+                        """
                     } else {
-                        echo "📦 node_modules already exists. Skipping install."
+                        echo "✅ node_modules already exists. Skipping npm install."
                     }
                 }
             }
         }
-
+        stage('Prepare Directories') {
+            steps {
+                sh """
+                    mkdir -p ${APP_DIR}/Govtproject/fileupload
+                    mkdir -p ${APP_DIR}/Govtproject/Generatedlicenses
+                    chown -R jenkins:jenkins ${APP_DIR}/Govtproject
+                """
+            }
+        }
         stage('Start Backend with PM2') {
             steps {
-                sh '''
-                pm2 delete FIRMS_API || true
-                pm2 start npm --name FIRMS_API -- start
-                pm2 save
-                pm2 status
-                '''
+                sh """
+                    export PM2_HOME=${PM2_HOME} 
+                    # Stop old process if exists
+                    pm2 delete ${APP_NAME} || true
+                    # Start backend with npm start
+                    pm2 start "npm start" \
+                        --name ${APP_NAME} \
+                        --cwd ${APP_DIR}
+                    # Save PM2 process list
+                    pm2 save
+                    pm2 status
+                """
             }
         }
     }
-
     post {
         success {
-            echo '✅ Backend started successfully via PM2'
+            echo "Backend started successfully via PM2"
         }
         failure {
-            echo '❌ Pipeline failed'
+            echo "Pipeline failed! Check PM2 logs for details."
         }
     }
 }
+ 
