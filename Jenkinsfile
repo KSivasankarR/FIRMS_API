@@ -2,56 +2,60 @@ pipeline {
     agent any
 
     tools {
-        nodejs 'Node18' // Node 18+ installed in Jenkins tools
+        nodejs 'Node18' // Make sure Node18 is configured in Jenkins Global Tool Config
     }
 
     environment {
-        PM2_HOME = "${env.HOME}/.pm2"
+        PM2_HOME = "${HOME}/.pm2"
+        NODE_ENV = 'production'
     }
 
     stages {
-
-        stage('Checkout SCM') {
+        stage('Checkout') {
             steps {
-                checkout scm
+                git branch: 'main',
+                    url: 'https://github.com/KSivasankarR/FIRMS_API.git',
+                    credentialsId: 'KSivasankarR'
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                script {
-                    echo "📦 Installing dependencies with Node ${tool 'Node18'}..."
-                    sh '''
-                        node -v
-                        npm -v
-                        rm -rf node_modules package-lock.json
-                        npm install
-                    '''
-                }
+                echo '📦 Installing Node.js dependencies...'
+                sh '''
+                    npm install --legacy-peer-deps
+                '''
             }
         }
 
-        stage('Start Backend with PM2') {
+        stage('Build / Compile') {
             steps {
-                script {
-                    echo "🚀 Starting FIRMS_API via PM2..."
-                    sh '''
-                        pm2 delete FIRMS_API || true
-                        pm2 start npm --name FIRMS_API -- start
-                        pm2 save
-                        pm2 status
-                    '''
-                }
+                echo '🛠 Compiling TypeScript...'
+                sh '''
+                    npx tsc
+                '''
+            }
+        }
+
+        stage('Start Backend via PM2') {
+            steps {
+                echo '🚀 Starting FIRMS_API with PM2...'
+                sh '''
+                    pm2 delete FIRMS_API || true
+                    pm2 start npm --name FIRMS_API -- start
+                    pm2 save
+                    pm2 status
+                '''
             }
         }
     }
 
     post {
         success {
-            echo "✅ Backend started successfully via PM2"
+            echo '✅ FIRMS_API backend started successfully!'
         }
         failure {
-            echo "❌ Build or start failed"
+            echo '❌ Pipeline failed. Check the logs.'
         }
     }
 }
