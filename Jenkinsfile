@@ -1,7 +1,7 @@
 pipeline {
     agent any
     tools {
-        nodejs 'Node16'  // Ensure Node16+ is installed on Jenkins
+        nodejs 'Node16'  // Make sure Node16+ is installed on Jenkins
     } 
     environment {
         PORT = '3004'
@@ -35,13 +35,13 @@ pipeline {
 
         stage('Patch colorspace') {
             steps {
-                sh """
-                    FILE=${APP_DIR}/node_modules/@so-ric/colorspace/dist/index.cjs.js
+                sh '''
+                    FILE="${APP_DIR}/node_modules/@so-ric/colorspace/dist/index.cjs.js"
                     if grep -q "Object.hasOwn(" "$FILE"; then
                         echo "🔧 Patching Object.hasOwn in colorspace..."
                         sed -i "s/Object.hasOwn(/Object.prototype.hasOwnProperty.call(/g" "$FILE"
                     fi
-                """
+                '''
             }
         }
 
@@ -59,6 +59,7 @@ pipeline {
             }
         }
     }
+
     post {
         success {
             echo "✅ Backend started successfully via PM2"
