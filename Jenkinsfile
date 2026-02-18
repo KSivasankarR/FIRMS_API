@@ -1,79 +1,62 @@
 pipeline {
     agent any
-
+    tools {
+        nodejs 'Node16'  // Make sure Node16 is installed on Jenkins
+    } 
     environment {
-        PM2_HOME = "${HOME}/.pm2"
-        NVM_DIR = "${HOME}/.nvm"
-        NODE_VERSION = "20"
+        PORT = '3004'
+        HOST = '0.0.0.0'
+        APP_NAME = 'FIRMS_API'
+        APP_DIR = '/var/lib/jenkins/FIRMS_API'
+        PM2_HOME = '/var/lib/jenkins/.pm2'
     }
-
     stages {
-
         stage('Checkout SCM') {
             steps {
                 checkout scm
             }
         }
-
-        stage('Set Node Version') {
+        stage('Install Dependencies (if needed)') {
             steps {
-                sh '''
-                # Load NVM
-                [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-
-                # Install Node 20 if not already
-                nvm install $NODE_VERSION
-
-                # Use Node 20
-                nvm use $NODE_VERSION
-
-                # Verify Node and NPM versions
-                node -v
-                npm -v
-                '''
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                sh '''
-                [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-                nvm use $NODE_VERSION
-
-                if [ -d "node_modules" ]; then
-                    echo "✅ node_modules exists. Skipping npm install."
-                else
-                    npm install
-                fi
-                '''
+                script {
+                    // Check if node_modules exists
+                    if (!fileExists("${APP_DIR}/node_modules")) {
+                        echo "📦 node_modules not found. Installing dependencies..."
+                        sh """
+                            cd ${APP_DIR}
+                            npm install
+                        """
+                    } else {
+                        echo "✅ node_modules already exists. Skipping npm install."
+                    }
+                }
             }
         }
 
         stage('Start Backend with PM2') {
             steps {
-                sh '''
-                [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-                nvm use $NODE_VERSION
-
-                # Stop old instance if running
-                pm2 delete FIRMS_API || true
-
-                # Start backend via PM2
-                pm2 start npm --name FIRMS_API -- start
-
-                # Save PM2 process list
-                pm2 save
-
-                # Show PM2 status
-                pm2 status
-                '''
+                sh """
+                    export PM2_HOME=${PM2_HOME} 
+                    # Stop old process if exists
+                    pm2 delete ${APP_NAME} || true
+                    # Start backend with npm start
+                    pm2 start "npm start" \
+                        --name ${APP_NAME} \
+                        --cwd ${APP_DIR}
+                    # Save PM2 process list
+                    pm2 save
+                    pm2 status
+                """
             }
         }
     }
-
     post {
-        always {
-            echo "✅ Backend started successfully via PM2 with Node $NODE_VERSION"
+        success {
+            echo "Backend started successfully via PM2"
+        }
+        failure {
+            echo "Pipeline failed! Check PM2 logs for details."
         }
     }
 }
+ 
