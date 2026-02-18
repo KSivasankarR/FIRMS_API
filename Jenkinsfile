@@ -5,6 +5,8 @@ pipeline {
         NODE_ENV = 'production'
         APP_NAME = 'FIRMS_API'
         PORT = '3004'
+        APP_DIR = "${WORKSPACE}"
+        PM2_HOME = '/var/lib/jenkins/.pm2'
     }
 
     stages {
