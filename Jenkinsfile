@@ -38,14 +38,15 @@ pipeline {
             }
         }
 
-        stage('Build TypeScript') {
+        stage('Fix TypeScript rootDir & Build') {
             steps {
                 sh '''
                 export NVM_DIR="$HOME/.nvm"
                 . "$NVM_DIR/nvm.sh"
                 nvm use 18
 
-                npx tsc
+                # Override rootDir to current directory during build
+                npx tsc --rootDir . --outDir dist
                 '''
             }
         }
