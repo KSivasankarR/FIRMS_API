@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        // Optional: PM2 home
         PM2_HOME = "${HOME}/.pm2"
     }
 
@@ -19,10 +18,9 @@ pipeline {
 
         stage('Use Node 18 with nvm') {
             steps {
-                // Load Node 18 using nvm
                 sh '''
                 export NVM_DIR="$HOME/.nvm"
-                [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+                [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
                 nvm install 18
                 nvm use 18
                 node -v
@@ -33,9 +31,14 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh '''
-                npm install
-                '''
+                script {
+                    if (!fileExists('node_modules')) {
+                        echo "📦 node_modules not found. Installing dependencies..."
+                        sh 'npm install'
+                    } else {
+                        echo "📦 node_modules already exists. Skipping install."
+                    }
+                }
             }
         }
 
@@ -53,10 +56,10 @@ pipeline {
 
     post {
         success {
-            echo "Backend started successfully via PM2"
+            echo '✅ Backend started successfully via PM2'
         }
         failure {
-            echo "Pipeline failed!"
+            echo '❌ Pipeline failed'
         }
     }
 }
