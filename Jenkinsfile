@@ -32,15 +32,7 @@ pipeline {
                 }
             }
         }
-        stage('Prepare Directories') {
-            steps {
-                sh """
-                    mkdir -p ${APP_DIR}/Govtproject/fileupload
-                    mkdir -p ${APP_DIR}/Govtproject/Generatedlicenses
-                    chown -R jenkins:jenkins ${APP_DIR}/Govtproject
-                """
-            }
-        }
+ 
         stage('Start Backend with PM2') {
             steps {
                 sh """
