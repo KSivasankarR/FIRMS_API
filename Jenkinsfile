@@ -38,15 +38,38 @@ pipeline {
             }
         }
 
-        stage('Fix TypeScript rootDir & Build') {
+        stage('Fix TS Config Automatically') {
+            steps {
+                sh '''
+                # Overwrite tsconfig.json with correct configuration
+                cat > tsconfig.json <<EOF
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "rootDir": ".",
+    "outDir": "dist",
+    "strict": false,
+    "skipLibCheck": true
+  },
+  "include": ["server.ts"]
+}
+EOF
+                '''
+            }
+        }
+
+        stage('Build Project') {
             steps {
                 sh '''
                 export NVM_DIR="$HOME/.nvm"
                 . "$NVM_DIR/nvm.sh"
                 nvm use 18
 
-                # Override rootDir to current directory during build
-                npx tsc --rootDir . --outDir dist
+                npx tsc
                 '''
             }
         }
