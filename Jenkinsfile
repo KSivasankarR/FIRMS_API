@@ -33,17 +33,19 @@ pipeline {
                 . "$NVM_DIR/nvm.sh"
                 nvm use 18
 
+                # Clean previous installs
                 rm -rf node_modules package-lock.json
-                npm install
+                npm install --legacy-peer-deps
                 '''
             }
         }
 
-        stage('Ensure swagger.json Exists') {
+        stage('Ensure Required Files') {
             steps {
                 sh '''
+                # Ensure swagger.json exists
                 if [ ! -f swagger.json ]; then
-                  echo "swagger.json not found, creating temporary default file"
+                  echo "Creating temporary swagger.json"
                   cat > swagger.json <<EOF
 {
   "swagger": "2.0",
@@ -51,6 +53,12 @@ pipeline {
   "paths": {}
 }
 EOF
+                fi
+
+                # Ensure user.types.ts exists (temporary empty file if missing)
+                if [ ! -f src/models/types/user.types.ts ]; then
+                  mkdir -p src/models/types
+                  echo "// temporary user.types placeholder" > src/models/types/user.types.ts
                 fi
                 '''
             }
@@ -67,12 +75,12 @@ EOF
     "moduleResolution": "node",
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "rootDir": ".",
+    "rootDir": "src",
     "outDir": "dist",
     "strict": false,
     "skipLibCheck": true
   },
-  "include": ["server.ts", "swagger.json"]
+  "include": ["src/**/*", "swagger.json"]
 }
 EOF
                 '''
