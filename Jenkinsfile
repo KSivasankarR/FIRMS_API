@@ -1,7 +1,7 @@
 pipeline {
     agent any
     tools {
-        nodejs 'Node16'  // Make sure Node16+ is installed on Jenkins
+        nodejs 'Node16'  // Ensure Node16+ is installed on Jenkins
     } 
     environment {
         PORT = '3004'
@@ -17,18 +17,16 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies (if needed)') {
+        stage('Install Dependencies') {
             steps {
                 script {
-                    if (!fileExists("${APP_DIR}/node_modules")) {
-                        echo "📦 node_modules not found. Installing dependencies..."
-                        sh """
-                            cd ${APP_DIR}
-                            npm install
-                        """
-                    } else {
-                        echo "✅ node_modules already exists. Skipping npm install."
-                    }
+                    echo "📦 Installing dependencies..."
+                    sh """
+                        cd ${APP_DIR}
+                        npm install
+                        npm install node-cron
+                        npm install --save-dev @types/node-cron
+                    """
                 }
             }
         }
