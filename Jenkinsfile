@@ -15,22 +15,23 @@ pipeline {
         }
 
         stage('Set Node Version') {
-            steps {
-                sh '''
-                # Load NVM
-                [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    steps {
+        sh '''
+        # Load NVM
+        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
-                # Install Node 20 if not present
-                nvm install $NODE_VERSION
+        # Install Node 20 if not present
+        nvm install $NODE_VERSION
 
-                # Use Node 20
-                nvm use $NODE_VERSION
+        # Use Node 20
+        nvm use $NODE_VERSION
 
-                echo "Using Node version: $(node -v)"
-                echo "Using NPM version: $(npm -v)"
-                '''
-            }
-        }
+        echo "Using Node version: $(node -v)"
+        echo "Using NPM version: $(npm -v)"
+        '''
+    }
+}
+
 
         stage('Install Dependencies') {
             steps {
