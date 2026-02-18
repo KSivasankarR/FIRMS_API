@@ -2,60 +2,55 @@ pipeline {
     agent any
 
     tools {
-        nodejs 'Node18' // Make sure Node18 is configured in Jenkins Global Tool Config
+        // Make sure Node18 is configured in Jenkins Global Tool Config
+        nodejs 'Node18'
     }
 
     environment {
         PM2_HOME = "${HOME}/.pm2"
-        NODE_ENV = 'production'
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout SCM') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/KSivasankarR/FIRMS_API.git',
-                    credentialsId: 'KSivasankarR'
+                checkout scm
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                echo '📦 Installing Node.js dependencies...'
-                sh '''
-                    npm install --legacy-peer-deps
-                '''
+                script {
+                    if (!fileExists('node_modules')) {
+                        echo "📦 Installing dependencies..."
+                        sh 'npm install'
+                    } else {
+                        echo "✅ node_modules already exists, skipping npm install"
+                    }
+                }
             }
         }
 
-        stage('Build / Compile') {
+        stage('Start Backend with PM2') {
             steps {
-                echo '🛠 Compiling TypeScript...'
-                sh '''
-                    npx tsc
-                '''
-            }
-        }
-
-        stage('Start Backend via PM2') {
-            steps {
-                echo '🚀 Starting FIRMS_API with PM2...'
-                sh '''
+                script {
+                    // Stop previous process if it exists
+                    sh '''
                     pm2 delete FIRMS_API || true
-                    pm2 start npm --name FIRMS_API -- start
+                    pm2 start npm --name FIRMS_API -- start --cwd $WORKSPACE
                     pm2 save
                     pm2 status
-                '''
+                    '''
+                }
             }
         }
     }
 
     post {
         success {
-            echo '✅ FIRMS_API backend started successfully!'
+            echo 'Backend started successfully via PM2'
         }
         failure {
-            echo '❌ Pipeline failed. Check the logs.'
+            echo 'Pipeline failed. Check logs above for details.'
         }
     }
 }
