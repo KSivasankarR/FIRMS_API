@@ -22,13 +22,6 @@ pipeline {
             }
         }
 
-        stage('Build TypeScript') {
-            steps {
-                echo 'Compiling TypeScript to JavaScript'
-                sh 'npm run build'
-            }
-        }
-
         stage('Start / Restart PM2') {
             steps {
                 echo 'Starting / Restarting PM2'
