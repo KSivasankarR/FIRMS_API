@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        PORT = 3004
         APP_NAME = "FIRMS_API"
         NVM_DIR = "${HOME}/.nvm"
     }
@@ -13,13 +12,16 @@ pipeline {
             steps {
                 sh '''
                 export NVM_DIR="$HOME/.nvm"
+
                 if [ ! -d "$NVM_DIR" ]; then
                   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
                 fi
+
                 . "$NVM_DIR/nvm.sh"
                 nvm install 18
                 nvm use 18
                 node -v
+                npm -v
                 '''
             }
         }
@@ -30,8 +32,26 @@ pipeline {
                 export NVM_DIR="$HOME/.nvm"
                 . "$NVM_DIR/nvm.sh"
                 nvm use 18
+
                 rm -rf node_modules package-lock.json
                 npm install
+                '''
+            }
+        }
+
+        stage('Ensure swagger.json Exists') {
+            steps {
+                sh '''
+                if [ ! -f swagger.json ]; then
+                  echo "swagger.json not found, creating temporary default file"
+                  cat > swagger.json <<EOF
+{
+  "swagger": "2.0",
+  "info": { "title": "FIRMS_API", "version": "1.0.0" },
+  "paths": {}
+}
+EOF
+                fi
                 '''
             }
         }
@@ -39,7 +59,6 @@ pipeline {
         stage('Fix TS Config Automatically') {
             steps {
                 sh '''
-                # Overwrite tsconfig.json for rootDir & JSON imports
                 cat > tsconfig.json <<EOF
 {
   "compilerOptions": {
@@ -53,9 +72,21 @@ pipeline {
     "strict": false,
     "skipLibCheck": true
   },
-  "include": ["server.ts"]
+  "include": ["server.ts", "swagger.json"]
 }
 EOF
+                '''
+            }
+        }
+
+        stage('Build Project') {
+            steps {
+                sh '''
+                export NVM_DIR="$HOME/.nvm"
+                . "$NVM_DIR/nvm.sh"
+                nvm use 18
+
+                npx tsc
                 '''
             }
         }
@@ -67,11 +98,9 @@ EOF
                 . "$NVM_DIR/nvm.sh"
                 nvm use 18
 
-                # Start first time if not running
                 if ! pm2 describe $APP_NAME > /dev/null; then
                   pm2 start dist/server.js --name $APP_NAME
                 else
-                  # Reload without downtime
                   pm2 reload $APP_NAME
                 fi
 
