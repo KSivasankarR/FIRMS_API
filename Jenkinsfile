@@ -15,33 +15,32 @@ pipeline {
         }
 
         stage('Set Node Version') {
-    steps {
-        sh '''
-        # Load NVM
-        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+            steps {
+                sh '''
+                # Load NVM
+                [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
-        # Install Node 20 if not present
-        nvm install $NODE_VERSION
+                # Install Node 20 if missing
+                nvm install $NODE_VERSION
+                nvm use $NODE_VERSION
 
-        # Use Node 20
-        nvm use $NODE_VERSION
-
-        echo "Using Node version: $(node -v)"
-        echo "Using NPM version: $(npm -v)"
-        '''
-    }
-}
-
+                echo "Using Node $(node -v)"
+                echo "Using NPM $(npm -v)"
+                '''
+            }
+        }
 
         stage('Install Dependencies') {
             steps {
                 sh '''
-                [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+                [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
                 nvm use $NODE_VERSION
 
-                # Reinstall node_modules for Node 20
-                rm -rf node_modules package-lock.json
-                npm install
+                if [ -d "node_modules" ]; then
+                    echo "✅ node_modules exists. Skipping install."
+                else
+                    npm install
+                fi
                 '''
             }
         }
@@ -49,19 +48,15 @@ pipeline {
         stage('Start Backend with PM2') {
             steps {
                 sh '''
-                [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+                [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
                 nvm use $NODE_VERSION
 
-                # Stop existing app safely
+                # Stop old instance safely
                 pm2 delete FIRMS_API || true
 
-                # Start app via PM2
+                # Start backend
                 pm2 start npm --name FIRMS_API -- start
-
-                # Save PM2 process list
                 pm2 save
-
-                # Show PM2 status
                 pm2 status
                 '''
             }
@@ -74,3 +69,4 @@ pipeline {
         }
     }
 }
+``
