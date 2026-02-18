@@ -1,120 +1,70 @@
 pipeline {
     agent any
-
+    tools {
+        nodejs 'Node16'  // Make sure Node16 is installed on Jenkins
+    } 
     environment {
-        APP_NAME = "FIRMS_API"
-        NVM_DIR = "${HOME}/.nvm"
+        PORT = '3004'
+        HOST = '0.0.0.0'
+        APP_NAME = 'FIRMS_API'
+        APP_DIR = '/var/lib/jenkins/FIRMS_API'
+        PM2_HOME = '/var/lib/jenkins/.pm2'
     }
-
     stages {
-
-        stage('Setup Node 18') {
+        stage('Checkout SCM') {
             steps {
-                sh '''
-                export NVM_DIR="$HOME/.nvm"
-
-                if [ ! -d "$NVM_DIR" ]; then
-                  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-                fi
-
-                . "$NVM_DIR/nvm.sh"
-                nvm install 18
-                nvm use 18
-                node -v
-                npm -v
-                '''
+                checkout scm
             }
         }
-
-        stage('Install Dependencies') {
+        stage('Install Dependencies (if needed)') {
             steps {
-                sh '''
-                export NVM_DIR="$HOME/.nvm"
-                . "$NVM_DIR/nvm.sh"
-                nvm use 18
-
-                # Clean previous installs
-                rm -rf node_modules package-lock.json
-                npm install --legacy-peer-deps
-                '''
+                script {
+                    // Check if node_modules exists
+                    if (!fileExists("${APP_DIR}/node_modules")) {
+                        echo "📦 node_modules not found. Installing dependencies..."
+                        sh """
+                            cd ${APP_DIR}
+                            npm install
+                        """
+                    } else {
+                        echo "✅ node_modules already exists. Skipping npm install."
+                    }
+                }
             }
         }
-
-        stage('Ensure Required Files') {
+        stage('Prepare Directories') {
             steps {
-                sh '''
-                # Ensure swagger.json exists
-                if [ ! -f swagger.json ]; then
-                  echo "Creating temporary swagger.json"
-                  cat > swagger.json <<EOF
-{
-  "swagger": "2.0",
-  "info": { "title": "FIRMS_API", "version": "1.0.0" },
-  "paths": {}
-}
-EOF
-                fi
-
-                # Ensure user.types.ts exists (temporary empty file if missing)
-                if [ ! -f src/models/types/user.types.ts ]; then
-                  mkdir -p src/models/types
-                  echo "// temporary user.types placeholder" > src/models/types/user.types.ts
-                fi
-                '''
+                sh """
+                    mkdir -p ${APP_DIR}/Govtproject/fileupload
+                    mkdir -p ${APP_DIR}/Govtproject/Generatedlicenses
+                    chown -R jenkins:jenkins ${APP_DIR}/Govtproject
+                """
             }
         }
-
-        stage('Fix TS Config Automatically') {
+        stage('Start Backend with PM2') {
             steps {
-                sh '''
-                cat > tsconfig.json <<EOF
-{
-  "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "rootDir": "src",
-    "outDir": "dist",
-    "strict": false,
-    "skipLibCheck": true
-  },
-  "include": ["src/**/*", "swagger.json"]
-}
-EOF
-                '''
-            }
-        }
-
-        stage('Build Project') {
-            steps {
-                sh '''
-                export NVM_DIR="$HOME/.nvm"
-                . "$NVM_DIR/nvm.sh"
-                nvm use 18
-
-                npx tsc
-                '''
-            }
-        }
-
-        stage('Zero-Downtime PM2 Deployment') {
-            steps {
-                sh '''
-                export NVM_DIR="$HOME/.nvm"
-                . "$NVM_DIR/nvm.sh"
-                nvm use 18
-
-                if ! pm2 describe $APP_NAME > /dev/null; then
-                  pm2 start dist/server.js --name $APP_NAME
-                else
-                  pm2 reload $APP_NAME
-                fi
-
-                pm2 save
-                '''
+                sh """
+                    export PM2_HOME=${PM2_HOME} 
+                    # Stop old process if exists
+                    pm2 delete ${APP_NAME} || true
+                    # Start backend with npm start
+                    pm2 start "npm start" \
+                        --name ${APP_NAME} \
+                        --cwd ${APP_DIR}
+                    # Save PM2 process list
+                    pm2 save
+                    pm2 status
+                """
             }
         }
     }
+    post {
+        success {
+            echo "Backend started successfully via PM2"
+        }
+        failure {
+            echo "Pipeline failed! Check PM2 logs for details."
+        }
+    }
 }
+ 
