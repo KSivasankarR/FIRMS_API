@@ -1,70 +1,42 @@
 pipeline {
     agent any
-    tools {
-        nodejs 'Node16'  // Make sure Node16 is installed on Jenkins
-    } 
+
     environment {
-        PORT = '3004'
-        HOST = '0.0.0.0'
-        APP_NAME = 'FIRMS_API'
-        APP_DIR = '/var/lib/jenkins/FIRMS_API'
-        PM2_HOME = '/var/lib/jenkins/.pm2'
+        NODE_VERSION = "18"
+        APP_NAME = "FIRMS_API"
+        APP_DIR = "/var/lib/jenkins/FIRMS_API"
     }
+
     stages {
-        stage('Checkout SCM') {
+
+        stage('Install Node 18') {
             steps {
-                checkout scm
+                sh '''
+                curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+                sudo apt-get install -y nodejs
+                node -v
+                '''
             }
         }
-        stage('Install Dependencies (if needed)') {
+
+        stage('Install Dependencies') {
             steps {
-                script {
-                    // Check if node_modules exists
-                    if (!fileExists("${APP_DIR}/node_modules")) {
-                        echo "📦 node_modules not found. Installing dependencies..."
-                        sh """
-                            cd ${APP_DIR}
-                            npm install
-                        """
-                    } else {
-                        echo "✅ node_modules already exists. Skipping npm install."
-                    }
-                }
+                sh '''
+                cd $APP_DIR
+                rm -rf node_modules package-lock.json
+                npm install
+                '''
             }
         }
-        stage('Prepare Directories') {
+
+        stage('Restart PM2') {
             steps {
-                sh """
-                    mkdir -p ${APP_DIR}/Govtproject/fileupload
-                    mkdir -p ${APP_DIR}/Govtproject/Generatedlicenses
-                    chown -R jenkins:jenkins ${APP_DIR}/Govtproject
-                """
+                sh '''
+                pm2 delete $APP_NAME || true
+                pm2 start $APP_DIR/server.ts --name $APP_NAME --interpreter ./node_modules/.bin/ts-node
+                pm2 save
+                '''
             }
-        }
-        stage('Start Backend with PM2') {
-            steps {
-                sh """
-                    export PM2_HOME=${PM2_HOME} 
-                    # Stop old process if exists
-                    pm2 delete ${APP_NAME} || true
-                    # Start backend with npm start
-                    pm2 start "npm start" \
-                        --name ${APP_NAME} \
-                        --cwd ${APP_DIR}
-                    # Save PM2 process list
-                    pm2 save
-                    pm2 status
-                """
-            }
-        }
-    }
-    post {
-        success {
-            echo "Backend started successfully via PM2"
-        }
-        failure {
-            echo "Pipeline failed! Check PM2 logs for details."
         }
     }
 }
- 
