@@ -10,7 +10,6 @@ pipeline {
     }
 
     stages {
-
         stage('Checkout SCM') {
             steps {
                 checkout scm
@@ -22,7 +21,6 @@ pipeline {
                 sh '''
                     echo "Node version:"
                     node -v
-                    which node
                 '''
             }
         }
@@ -38,30 +36,32 @@ pipeline {
         }
 
         stage('Restart Backend with PM2') {
-    steps {
-        sh '''
-            export PM2_HOME=${PM2_HOME}
-            cd ${APP_DIR}
+            steps {
+                sh '''
+                    export PM2_HOME=${PM2_HOME}
+                    cd ${APP_DIR}
 
-            if pm2 describe ${APP_NAME} > /dev/null 2>&1; then
-                pm2 restart ${APP_NAME} --update-env
-            else
-                # Run the compiled JS or ts-node directly
-                pm2 start ./server.ts --name ${APP_NAME} --interpreter ts-node --update-env
-            fi
+                    if pm2 describe ${APP_NAME} > /dev/null 2>&1; then
+                        echo "Restarting existing process"
+                        pm2 restart ${APP_NAME} --update-env
+                    else
+                        echo "Starting new process"
+                        pm2 start ./server.ts --name ${APP_NAME} --interpreter ts-node --update-env
+                    fi
 
-            pm2 save
-            pm2 status
-        '''
+                    pm2 save
+                    pm2 status
+                '''
+            }
+        }
     }
-}
 
     post {
         success {
-            echo '✅ Backend restarted successfully'
+            echo "✅ Backend deployed"
         }
         failure {
-            echo '❌ Pipeline failed'
+            echo "❌ Deployment failed"
         }
     }
 }
