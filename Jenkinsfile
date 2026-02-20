@@ -7,8 +7,10 @@ pipeline {
         APP_NAME = 'FIRMS_API'
         APP_DIR = '/var/lib/jenkins/FIRMS_API'
         PM2_HOME = '/var/lib/jenkins/.pm2'
-         // add database URL here
-        MONGO_URL = 'mongodb+srv://kumartallapalli:vtElM1N8bKwSV6Gi@cluster0.ie7rfp6.mongodb.net/firms'
+
+        // Put credentials IDs here for secure vars
+        MONGO_URL = credentials('mongo-url')
+        JWT_SECRET = credentials('jwt-secret')
     }
 
     stages {
@@ -22,7 +24,7 @@ pipeline {
         stage('Verify Node Version') {
             steps {
                 sh '''
-                    echo "Using Node version:"
+                    echo "Node version:"
                     node -v
                 '''
             }
@@ -38,33 +40,38 @@ pipeline {
             }
         }
 
-       stage('Deploy with PM2') {
-    steps {
-        sh '''
-            export PM2_HOME=${PM2_HOME}
-            cd ${APP_DIR}
+        stage('Deploy with PM2') {
+            steps {
+                sh '''
+                    export PM2_HOME=${PM2_HOME}
+                    cd ${APP_DIR}
 
-            # Check if process exists
-            if pm2 describe ${APP_NAME} > /dev/null 2>&1; then
-                echo "Restarting existing PM2 process..."
-                pm2 restart ${APP_NAME} --update-env
-            else
-                echo "Starting PM2 process with ts-node..."
-                pm2 start ./server.ts --name ${APP_NAME} --interpreter ts-node --update-env
-            fi
+                    if pm2 describe ${APP_NAME} > /dev/null 2>&1; then
+                        echo "Restarting existing PM2 process..."
+                        pm2 restart ${APP_NAME} --update-env
+                    else
+                        echo "Starting app directly with ts-node..."
+                        pm2 start ./server.ts \
+                            --name ${APP_NAME} \
+                            --interpreter ts-node \
+                            --update-env
+                    fi
 
-            pm2 save
-            pm2 status
-        '''
-    }
-}
+                    pm2 save
+                    pm2 status
+                '''
+            }
+        }
+
+    }  // <-- closes stages
 
     post {
         success {
-            echo "✅ FIRMS_API deployed successfully!"
+            echo "✅ FIRMS_API deployed successfully"
         }
         failure {
-            echo "❌ Deployment failed — check the logs above."
+            echo "❌ Deployment failed — check logs above"
         }
     }
-}
+
+}  // <-- closes pipeline
