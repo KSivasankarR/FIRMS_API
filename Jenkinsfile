@@ -37,22 +37,22 @@ pipeline {
         }
 
         stage('Deploy with PM2') {
-            steps {
-                sh '''
-                    export PM2_HOME=${PM2_HOME}
-                    cd ${APP_DIR}
+    steps {
+        sh '''
+            export PM2_HOME=${PM2_HOME}
+            cd ${APP_DIR}
 
-                    echo "Deleting old PM2 process (if exists)..."
-                    pm2 delete ${APP_NAME} || true
+            echo "Deleting old PM2 process (if exists)…"
+            pm2 delete ${APP_NAME} || true
 
-                    echo "Starting app via npx ts-node..."
-                    pm2 start npx --name ${APP_NAME} -- run ts-node server.ts --update-env
+            echo "Starting app with npx ts-node…"
+            pm2 start "npx ts-node server.ts" --name ${APP_NAME} --update-env
 
-                    pm2 save
-                    pm2 status
-                '''
-            }
-        }
+            pm2 save
+            pm2 status
+        '''
+    }
+}
 
     }
 
