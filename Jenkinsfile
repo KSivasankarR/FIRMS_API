@@ -19,48 +19,54 @@ pipeline {
 
         stage('Verify Node Version') {
             steps {
-                sh """
-                    echo "Using Node version:"
+                sh '''
+                    echo "Node version:"
                     node -v
                     which node
-                """
+                '''
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                sh """
+                sh '''
                     cd ${APP_DIR}
+                    echo "Installing dependencies..."
                     rm -rf node_modules
                     npm ci
-                """
+                '''
             }
         }
 
-stage('Start Backend with PM2') {
+       stage('Restart Backend with PM2') {
     steps {
-        sh """
+        sh '''
             export PM2_HOME=${PM2_HOME}
             cd ${APP_DIR}
 
-            echo "Stopping old process..."
-            pm2 restart ${APP_NAME} || true
+            echo "Checking if app exists..."
 
-            echo "Starting app..."
-            pm2 start npm --name ${APP_NAME} -- start
+            pm2 describe ${APP_NAME} > /dev/null 2>&1
+
+            if [ $? -eq 0 ]; then
+                echo "App exists. Restarting..."
+                pm2 restart ${APP_NAME}
+            else
+                echo "App not found. Starting new process..."
+                pm2 start npm --name ${APP_NAME} -- start
+            fi
 
             pm2 save
             pm2 status
-        """
+        '''
     }
 }
-
     post {
         success {
-            echo "✅ Backend started successfully via PM2"
+            echo '✅ Backend started successfully via PM2'
         }
         failure {
-            echo "❌ Pipeline failed!"
+            echo '❌ Pipeline failed!'
         }
     }
 }
