@@ -10,7 +10,8 @@ pipeline {
     }
 
     stages {
-        stage('Checkout SCM') {
+
+        stage('Checkout Code') {
             steps {
                 checkout scm
             }
@@ -19,7 +20,7 @@ pipeline {
         stage('Verify Node Version') {
             steps {
                 sh '''
-                    echo "Node version:"
+                    echo "Using Node version:"
                     node -v
                 '''
             }
@@ -36,37 +37,37 @@ pipeline {
         }
 
         stage('Deploy with PM2') {
-    steps {
-        sh '''
-            export PM2_HOME=${PM2_HOME}
-            cd ${APP_DIR}
+            steps {
+                sh '''
+                    export PM2_HOME=${PM2_HOME}
+                    cd ${APP_DIR}
 
-            # Compile TS
-            npm run build
+                    # Restart if exists, otherwise start
+                    if pm2 describe ${APP_NAME} > /dev/null 2>&1; then
+                        echo "Restarting existing PM2 app..."
+                        pm2 restart ${APP_NAME} --update-env
+                    else
+                        echo "Starting PM2 app with ts-node..."
+                        pm2 start ./server.ts \
+                            --name ${APP_NAME} \
+                            --interpreter ts-node \
+                            --update-env
+                    fi
 
-            if pm2 describe ${APP_NAME} > /dev/null 2>&1; then
-                echo "App exists. Restarting..."
-                pm2 restart ${APP_NAME} --update-env
-            else
-                echo "Starting app direct JS build..."
-                pm2 start ./dist/server.js --name ${APP_NAME} --update-env
-            fi
-
-            pm2 save
-            pm2 status
-        '''
+                    # Save and show status
+                    pm2 save
+                    pm2 status
+                '''
+            }
+        }
     }
-}
-
-    } // ← closes stages
 
     post {
         success {
-            echo "✅ Backend deployed"
+            echo "✅ FIRMS_API deployed successfully!"
         }
         failure {
-            echo "❌ Deployment failed"
+            echo "❌ Deployment failed — check the logs above."
         }
     }
-
-} // ← closes pipeline
+}
