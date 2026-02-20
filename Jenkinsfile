@@ -38,26 +38,23 @@ pipeline {
         }
 
         stage('Restart Backend with PM2') {
-            steps {
-                sh '''
-                    export PM2_HOME=${PM2_HOME}
-                    cd ${APP_DIR}
+    steps {
+        sh '''
+            export PM2_HOME=${PM2_HOME}
+            cd ${APP_DIR}
 
-                    # Restart if exists, otherwise start
-                    if pm2 describe ${APP_NAME} > /dev/null 2>&1; then
-                        echo "App exists. Restarting..."
-                        pm2 restart ${APP_NAME}
-                    else
-                        echo "App not found. Starting..."
-                        pm2 start npm --name ${APP_NAME} -- run start --loglevel info
-                    fi
+            if pm2 describe ${APP_NAME} > /dev/null 2>&1; then
+                pm2 restart ${APP_NAME} --update-env
+            else
+                # Run the compiled JS or ts-node directly
+                pm2 start ./server.ts --name ${APP_NAME} --interpreter ts-node --update-env
+            fi
 
-                    pm2 save
-                    pm2 status
-                '''
-            }
-        }
+            pm2 save
+            pm2 status
+        '''
     }
+}
 
     post {
         success {
