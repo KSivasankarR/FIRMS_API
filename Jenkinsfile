@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        nodejs 'Node18'   // Make sure Node18 is configured in Global Tool Configuration
-    }
-
     environment {
         PORT = '3004'
         HOST = '0.0.0.0'
@@ -21,11 +17,20 @@ pipeline {
             }
         }
 
+        stage('Verify Node Version') {
+            steps {
+                sh """
+                    echo "Using Node version:"
+                    node -v
+                    which node
+                """
+            }
+        }
+
         stage('Install Dependencies') {
             steps {
                 sh """
                     cd ${APP_DIR}
-                    echo "📦 Installing dependencies with npm ci..."
                     rm -rf node_modules
                     npm ci
                 """
@@ -36,13 +41,8 @@ pipeline {
             steps {
                 sh """
                     export PM2_HOME=${PM2_HOME}
-                    
-                    echo "🛑 Stopping old PM2 process (if exists)..."
                     pm2 delete ${APP_NAME} || true
-                    
-                    echo "🚀 Starting backend with PM2..."
                     pm2 start npm --name ${APP_NAME} -- start --cwd ${APP_DIR}
-                    
                     pm2 save
                     pm2 status
                 """
@@ -55,7 +55,7 @@ pipeline {
             echo "✅ Backend started successfully via PM2"
         }
         failure {
-            echo "❌ Pipeline failed! Check PM2 logs."
+            echo "❌ Pipeline failed!"
         }
     }
 }
