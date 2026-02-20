@@ -37,27 +37,25 @@ pipeline {
             }
         }
 
-        stage('Restart Backend with PM2') {
-            steps {
-                sh '''
-                    export PM2_HOME=${PM2_HOME}
-                    cd ${APP_DIR}
+      stage('Restart Backend with PM2') {
+    steps {
+        sh '''
+            export PM2_HOME=${PM2_HOME}
+            cd ${APP_DIR}
 
-                    if pm2 describe ${APP_NAME} > /dev/null 2>&1; then
-                        echo "App exists. Restarting..."
-                        pm2 restart ${APP_NAME}
-                    else
-                        echo "App not found. Starting..."
-                        pm2 start npm --name ${APP_NAME} -- start
-                    fi
+            if pm2 describe ${APP_NAME} > /dev/null 2>&1; then
+                echo "App exists. Restarting..."
+                pm2 restart ${APP_NAME}
+            else
+                echo "App not found. Starting..."
+                pm2 start npm --name ${APP_NAME} -- run start --loglevel info
+            fi
 
-                    pm2 save
-                    pm2 status
-                '''
-            }
-        }
-
+            pm2 save
+            pm2 status
+        '''
     }
+}
 
     post {
         success {
