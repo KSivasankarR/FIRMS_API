@@ -35,26 +35,25 @@ pipeline {
             }
         }
 
-        stage('Restart Backend with PM2') {
-            steps {
-                sh '''
-                    export PM2_HOME=${PM2_HOME}
-                    cd ${APP_DIR}
+stage('Restart Backend with PM2') {
+    steps {
+        sh '''
+            export PM2_HOME=${PM2_HOME}
+            cd ${APP_DIR}
 
-                    if pm2 describe ${APP_NAME} > /dev/null 2>&1; then
-                        echo "Restarting existing process"
-                        pm2 restart ${APP_NAME} --update-env
-                    else
-                        echo "Starting new process"
-                        pm2 start ./server.ts --name ${APP_NAME} --interpreter ts-node --update-env
-                    fi
+            if pm2 describe ${APP_NAME} > /dev/null 2>&1; then
+                echo "Restarting existing process..."
+                pm2 restart ${APP_NAME} --update-env
+            else
+                echo "Starting app directly without npm..."
+                pm2 start ./server.ts --name ${APP_NAME} --interpreter ts-node --update-env
+            fi
 
-                    pm2 save
-                    pm2 status
-                '''
-            }
-        }
+            pm2 save
+            pm2 status
+        '''
     }
+}
 
     post {
         success {
