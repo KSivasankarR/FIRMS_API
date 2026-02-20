@@ -37,18 +37,23 @@ pipeline {
             }
         }
 
-        stage('Start Backend with PM2') {
-            steps {
-                sh """
-                    export PM2_HOME=${PM2_HOME}
-                    pm2 delete ${APP_NAME} || true
-                    pm2 start npm --name ${APP_NAME} -- start --cwd ${APP_DIR}
-                    pm2 save
-                    pm2 status
-                """
-            }
-        }
+stage('Start Backend with PM2') {
+    steps {
+        sh """
+            export PM2_HOME=${PM2_HOME}
+            cd ${APP_DIR}
+
+            echo "Stopping old process..."
+            pm2 restart ${APP_NAME} || true
+
+            echo "Starting app..."
+            pm2 start npm --name ${APP_NAME} -- start
+
+            pm2 save
+            pm2 status
+        """
     }
+}
 
     post {
         success {
