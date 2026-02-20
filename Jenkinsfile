@@ -8,7 +8,7 @@ pipeline {
         APP_DIR = '/var/lib/jenkins/FIRMS_API'
         PM2_HOME = '/var/lib/jenkins/.pm2'
          // add database URL here
-        MONGO_URL = 'mongodb+srv://<username>:<password>@cluster0.ie7rfp6.mongodb.net/firms'
+        MONGO_URL = 'mongodb+srv://kumartallapalli:vtElM1N8bKwSV6Gi@cluster0.ie7rfp6.mongodb.net/firms'
     }
 
     stages {
