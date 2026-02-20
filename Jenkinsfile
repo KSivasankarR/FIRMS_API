@@ -38,31 +38,26 @@ pipeline {
             }
         }
 
-        stage('Deploy with PM2') {
-            steps {
-                sh '''
-                    export PM2_HOME=${PM2_HOME}
-                    cd ${APP_DIR}
+       stage('Deploy with PM2') {
+    steps {
+        sh '''
+            export PM2_HOME=${PM2_HOME}
+            cd ${APP_DIR}
 
-                    # Restart if exists, otherwise start
-                    if pm2 describe ${APP_NAME} > /dev/null 2>&1; then
-                        echo "Restarting existing PM2 app..."
-                        pm2 restart ${APP_NAME} --update-env
-                    else
-                        echo "Starting PM2 app with ts-node..."
-                        pm2 start ./server.ts \
-                            --name ${APP_NAME} \
-                            --interpreter ts-node \
-                            --update-env
-                    fi
+            # Check if process exists
+            if pm2 describe ${APP_NAME} > /dev/null 2>&1; then
+                echo "Restarting existing PM2 process..."
+                pm2 restart ${APP_NAME} --update-env
+            else
+                echo "Starting PM2 process with ts-node..."
+                pm2 start ./server.ts --name ${APP_NAME} --interpreter ts-node --update-env
+            fi
 
-                    # Save and show status
-                    pm2 save
-                    pm2 status
-                '''
-            }
-        }
+            pm2 save
+            pm2 status
+        '''
     }
+}
 
     post {
         success {
