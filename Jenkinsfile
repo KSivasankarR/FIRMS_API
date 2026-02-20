@@ -8,6 +8,9 @@ pipeline {
         APP_DIR = '/var/lib/jenkins/FIRMS_API'
         PM2_HOME = '/var/lib/jenkins/.pm2'
 
+        // Add your Jenkins credential IDs here
+        MONGO_URL  = credentials('mongo-url')
+        JWT_SECRET = credentials('jwt-secret')
     }
 
     stages {
@@ -38,35 +41,31 @@ pipeline {
         }
 
         stage('Deploy with PM2') {
-    steps {
-        sh '''
-            export PM2_HOME=${PM2_HOME}
-            cd ${APP_DIR}
+            steps {
+                sh '''
+                    export PM2_HOME=${PM2_HOME}
+                    cd ${APP_DIR}
 
-            echo "Deleting old PM2 process (if exists)..."
-            pm2 delete ${APP_NAME} || true
+                    echo "Deleting old PM2 process (if exists)..."
+                    pm2 delete ${APP_NAME} || true
 
-            echo "Starting app with ts-node..."
-            pm2 start ./server.ts \
-                --name ${APP_NAME} \
-                --interpreter ts-node \
-                --update-env
+                    echo "Starting app via npx ts-node..."
+                    pm2 start npx --name ${APP_NAME} -- run ts-node server.ts --update-env
 
-            pm2 save
-            pm2 status
-        '''
+                    pm2 save
+                    pm2 status
+                '''
+            }
+        }
+
     }
-}
-
-    }  // <-- closes stages
 
     post {
         success {
             echo "✅ FIRMS_API deployed successfully"
         }
         failure {
-            echo "❌ Deployment failed — check logs above"
+            echo "❌ Deployment failed — check logs above!"
         }
     }
-
-}  // <-- closes pipeline
+}
