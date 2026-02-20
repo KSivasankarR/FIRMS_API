@@ -7,10 +7,6 @@ pipeline {
         APP_NAME = 'FIRMS_API'
         APP_DIR = '/var/lib/jenkins/FIRMS_API'
         PM2_HOME = '/var/lib/jenkins/.pm2'
-
-        // Add your Jenkins credential IDs here
-        MONGO_URL  = credentials('mongo-url')
-        JWT_SECRET = credentials('jwt-secret')
     }
 
     stages {
